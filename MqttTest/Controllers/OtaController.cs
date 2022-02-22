@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace MqttTest.Controllers;
 
@@ -7,7 +6,7 @@ namespace MqttTest.Controllers;
 [ApiController]
 public class OtaController : ControllerBase
 {
-    [HttpGet("bin/{id}/{version}")]
+    [HttpGet("{id}/{version}")]
     public IActionResult Download(string id, string version)
     {
         if (id == "esp-test" && version == "0.1-ALPHA")
@@ -22,7 +21,6 @@ public class OtaController : ControllerBase
         if (id == "esp-test")
             return Ok(new
             {
-                bin = "/api/ota/bin/esp-test/0.1-ALPHA",
                 vCode = "0.1-ALPHA",
                 vNum = 1
             });
