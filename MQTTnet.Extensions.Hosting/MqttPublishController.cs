@@ -1,6 +1,6 @@
 ﻿namespace MQTTnet.Extensions.Hosting;
 
-public abstract class MqttBasePublishController
+public abstract class MqttPublishController : MqttBaseController
 {
     public PublishContext Context { get; internal set; }
 

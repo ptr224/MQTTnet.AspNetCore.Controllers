@@ -1,29 +1,27 @@
 ﻿using MQTTnet.Extensions.Hosting;
 
-namespace MqttTest.MqttControllers
+namespace MqttTest.MqttControllers;
+
+public class SubscribeController : MqttSubscriptionController
 {
-    [MqttController]
-    public class SubscribeController : MqttBaseSubscriptionController
+    private readonly ILogger<SubscribeController> _logger;
+
+    public SubscribeController(ILogger<SubscribeController> logger)
     {
-        private readonly ILogger<SubscribeController> _logger;
+        _logger = logger;
+    }
 
-        public SubscribeController(ILogger<SubscribeController> logger)
-        {
-            _logger = logger;
-        }
+    [MqttRoute("{serial}/#")]
+    public async Task<bool> Accept(string serial)
+    {
+        _logger.LogInformation("Accept subscription to " + serial + " : " + Context.TopicFilter.Topic);
+        return true;
+    }
 
-        [MqttRoute("{serial}/#")]
-        public async Task<bool> Accept(string serial)
-        {
-            _logger.LogInformation("Accept subscription to " + serial + " : " + Context.TopicFilter.Topic);
-            return true;
-        }
-
-        [MqttRoute("#")]
-        public async Task<bool> Forbid()
-        {
-            _logger.LogInformation("Forbid subscription to: " + Context.TopicFilter.Topic);
-            return false;
-        }
+    [MqttRoute("#")]
+    public async Task<bool> Forbid()
+    {
+        _logger.LogInformation("Forbid subscription to: " + Context.TopicFilter.Topic);
+        return false;
     }
 }

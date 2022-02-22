@@ -1,11 +1,9 @@
-﻿using System.Text;
-using System.Text.Json;
-using MQTTnet.Extensions.Hosting;
+﻿using MQTTnet.Extensions.Hosting;
+using System.Text;
 
 namespace MqttTest.MqttControllers;
 
-[MqttController]
-public class PublishController : MqttBasePublishController
+public class PublishController : MqttPublishController
 {
     private readonly ILogger<PublishController> _logger;
 

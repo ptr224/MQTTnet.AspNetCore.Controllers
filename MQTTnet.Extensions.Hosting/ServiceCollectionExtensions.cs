@@ -13,14 +13,14 @@ public static class ServiceCollectionExtensions
         // Trova tutti i controller e aggiungili alla DI
         var controllers = assemblies
             .SelectMany(a => a.GetTypes())
-            .Where(type => type.GetCustomAttribute<MqttControllerAttribute>(false) is not null);
+            .Where(type => type.IsSubclassOf(typeof(MqttBaseController)) && !type.IsAbstract);
 
         foreach (var controller in controllers)
             services.AddScoped(controller);
 
         // Aggiungi le RouteTable
-        services.AddSingleton(p => new SubscriptionRouteTable(controllers.Where(type => type.IsSubclassOf(typeof(MqttBaseSubscriptionController)))));
-        services.AddSingleton(p => new PublishRouteTable(controllers.Where(type => type.IsSubclassOf(typeof(MqttBasePublishController)))));
+        services.AddSingleton(p => new SubscriptionRouteTable(controllers.Where(type => type.IsSubclassOf(typeof(MqttSubscriptionController)))));
+        services.AddSingleton(p => new PublishRouteTable(controllers.Where(type => type.IsSubclassOf(typeof(MqttPublishController)))));
         return services;
     }
 

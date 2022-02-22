@@ -117,7 +117,7 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
             var parameters = route.Method.GetParameters();
             object result;
 
-            (controller as MqttBaseSubscriptionController).Context = new(context);
+            (controller as MqttSubscriptionController).Context = new(context);
 
             if (parameters.Length == 0)
             {
@@ -177,7 +177,7 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
             var parameters = route.Method.GetParameters();
             object result;
 
-            (controller as MqttBasePublishController).Context = new(context);
+            (controller as MqttPublishController).Context = new(context);
 
             if (parameters.Length == 0)
             {
