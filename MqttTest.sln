@@ -5,7 +5,7 @@ VisualStudioVersion = 17.1.32210.238
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MqttTest", "MqttTest\MqttTest.csproj", "{A2180A6D-9CF9-4219-8952-2FB325460B50}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Transports.Mqtt", "Transports.Mqtt\Transports.Mqtt.csproj", "{AEFA63D7-015F-4BA3-B242-9AAEE9B47D13}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MQTTnet.Extensions.Hosting", "MQTTnet.Extensions.Hosting\MQTTnet.Extensions.Hosting.csproj", "{AEFA63D7-015F-4BA3-B242-9AAEE9B47D13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

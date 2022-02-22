@@ -1,5 +1,5 @@
 using MqttTest.Services;
-using Transports.Mqtt;
+using MQTTnet.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +20,9 @@ builder.Services.AddMqttBroker(options =>
     options.WithConnectionBacklog(1000);
     options.WithDefaultEndpointPort(1883);
     options.WithMaxParallelRequests(4);
+    options.WithDefaultPublishAccept(true);
+    options.WithDefaultSubscriptionAccept(true);
 });
-builder.Services.AddMqttAuthorizationPolicy<MqttAuthorizationPolicy>();
 builder.Services.AddMqttConnectionHandler<MqttConnectionHandler>();
 
 var app = builder.Build();
