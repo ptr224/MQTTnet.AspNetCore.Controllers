@@ -19,7 +19,7 @@ public class PublishController : MqttPublishController
         return Stop();
     }
 
-    [MqttRoute("{serial}/forbid")]
+    [MqttRoute("{serial}/forbid/+/#")]
     public async Task<IMqttPublishResult> ManageForbid(string serial)
     {
         _logger.LogInformation("Message from " + serial + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
