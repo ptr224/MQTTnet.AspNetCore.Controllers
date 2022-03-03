@@ -10,18 +10,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configura MediatR e MQTT
-
-var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-builder.Services.AddMqttControllers(assemblies);
 builder.Services.AddMqttBroker(options =>
 {
     options.WithConnectionBacklog(1000);
     options.WithDefaultEndpointPort(1883);
     options.WithMaxParallelRequests(4);
-    options.WithDefaultPublishAccept(false);
-    options.WithDefaultSubscriptionAccept(false);
+    options.WithControllers(AppDomain.CurrentDomain.GetAssemblies());
     options.WithAuthenticationHandler<MqttAuthenticationHandler>();
     options.WithConnectionHandler<MqttConnectionHandler>();
 });

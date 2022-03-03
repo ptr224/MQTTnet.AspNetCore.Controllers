@@ -53,8 +53,6 @@ internal sealed class Broker :
     private readonly IMqttServerOptions mqttOptions;
     private readonly IMqttServer mqttServer;
     private readonly AsyncBulkheadPolicy policy;
-    private readonly bool defaultSubscriptionAccept;
-    private readonly bool defaultPublishAccept;
     private readonly SubscriptionRouteTable _subscriptionRouteTable;
     private readonly PublishRouteTable _publishRouteTable;
 
@@ -71,8 +69,6 @@ internal sealed class Broker :
 
         mqttServer = new MqttFactory().CreateMqttServer();
         policy = Policy.BulkheadAsync(options.MaxParallelRequests, options.MaxParallelRequests * 4);
-        defaultSubscriptionAccept = options.DefaultSubscriptionAccept;
-        defaultPublishAccept = options.DefaultPublishAccept;
 
         // Attiva handler sottoscrizioni se necessario
 
@@ -120,7 +116,7 @@ internal sealed class Broker :
             var route = _subscriptionRouteTable.Match(topic);
 
             if (route is null)
-                return defaultSubscriptionAccept;
+                return false;
 
             // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
             await using var scope = _scopeFactory.CreateAsyncScope();
@@ -158,7 +154,7 @@ internal sealed class Broker :
             var route = _publishRouteTable.Match(topic);
 
             if (route is null)
-                return defaultPublishAccept;
+                return false;
 
             // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
             await using var scope = _scopeFactory.CreateAsyncScope();

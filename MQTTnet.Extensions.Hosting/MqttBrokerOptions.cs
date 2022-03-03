@@ -1,13 +1,13 @@
 ﻿using MQTTnet.Server;
 using System;
+using System.Reflection;
 
 namespace MQTTnet.Extensions.Hosting;
 
 public sealed class MqttBrokerOptions : MqttServerOptionsBuilder
 {
     internal int MaxParallelRequests { get; private set; } = 4;
-    internal bool DefaultSubscriptionAccept { get; private set; } = false;
-    internal bool DefaultPublishAccept { get; private set; } = false;
+    internal Assembly[] ControllerAssemblies { get; private set; } = null;
     internal Type AuthenticationHandler { get; private set; } = null;
     internal Type ConnectionHandler { get; private set; } = null;
 
@@ -17,15 +17,9 @@ public sealed class MqttBrokerOptions : MqttServerOptionsBuilder
         return this;
     }
 
-    public MqttBrokerOptions WithDefaultSubscriptionAccept(bool value)
+    public MqttBrokerOptions WithControllers(params Assembly[] assemblies)
     {
-        DefaultSubscriptionAccept = value;
-        return this;
-    }
-
-    public MqttBrokerOptions WithDefaultPublishAccept(bool value)
-    {
-        DefaultPublishAccept = value;
+        ControllerAssemblies = assemblies;
         return this;
     }
 
