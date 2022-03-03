@@ -1,5 +1,4 @@
-﻿using MQTTnet;
-using MQTTnet.Server;
+﻿using MQTTnet.Server;
 
 namespace MQTTnet.Extensions.Hosting;
 

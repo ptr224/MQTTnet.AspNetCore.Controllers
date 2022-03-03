@@ -1,5 +1,5 @@
-﻿using MQTTnet.Extensions.Hosting;
-using System.Text;
+﻿using MQTTnet;
+using MQTTnet.Extensions.Hosting;
 
 namespace MqttTest.MqttControllers;
 
@@ -15,28 +15,28 @@ public class PublishController : MqttPublishController
     [MqttRoute("+/+/#")]
     public IMqttPublishResult Answer()
     {
-        _logger.LogInformation("Message from " + Context.ClientId + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
+        _logger.LogInformation("Message from " + Context.ClientId + " : " + Context.ApplicationMessage.ConvertPayloadToString());
         return Publish();
     }
 
     [MqttRoute("{serial}/stop")]
-    public async Task<IMqttPublishResult> ManageStop(string serial)
+    public IMqttPublishResult ManageStop(string serial)
     {
-        _logger.LogInformation("Message from " + serial + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
+        _logger.LogInformation("Message from " + serial + " : " + Context.ApplicationMessage.ConvertPayloadToString());
         return Stop();
     }
 
     [MqttRoute("{serial}/forbid")]
-    public async Task<IMqttPublishResult> ManageForbid(string serial)
+    public IMqttPublishResult ManageForbid(string serial)
     {
-        _logger.LogInformation("Message from " + serial + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
+        _logger.LogInformation("Message from " + serial + " : " + Context.ApplicationMessage.ConvertPayloadToString());
         return Forbid();
     }
 
     [MqttRoute("{serial}/publish")]
-    public async Task<IMqttPublishResult> ManagePublish(string serial)
+    public IMqttPublishResult ManagePublish(string serial)
     {
-        _logger.LogInformation("Message from " + serial + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
+        _logger.LogInformation("Message from " + serial + " : " + Context.ApplicationMessage.ConvertPayloadToString());
         return Publish();
     }
 }

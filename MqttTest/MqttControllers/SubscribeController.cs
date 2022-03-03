@@ -12,21 +12,21 @@ public class SubscribeController : MqttSubscriptionController
     }
 
     [MqttRoute("+")]
-    public async Task<bool> Root()
+    public bool Root()
     {
         _logger.LogInformation("Accept subscription to: " + Context.TopicFilter.Topic);
         return true;
     }
 
     [MqttRoute("+/si/#")]
-    public async Task<bool> Accept()
+    public bool Accept()
     {
         _logger.LogInformation("Accept subscription to: " + Context.TopicFilter.Topic);
         return true;
     }
 
     [MqttRoute("+/no/#")]
-    public async Task<bool> Forbid()
+    public bool Forbid()
     {
         _logger.LogInformation("Forbid subscription to: " + Context.TopicFilter.Topic);
         return false;

@@ -30,16 +30,22 @@ public static class ServiceCollectionExtensions
         configureOptions(options);
 
         // Aggiungi le impostazioni ed il Broker
+
         services.AddSingleton(options);
         services.AddSingleton<Broker>();
         services.AddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
         services.AddHostedService(p => p.GetRequiredService<Broker>());
-        return services;
-    }
 
-    public static IServiceCollection AddMqttConnectionHandler<T>(this IServiceCollection services) where T : IBrokerConnectionHandler
-    {
-        services.AddSingleton(typeof(IBrokerConnectionHandler), typeof(T));
+        // Aggiungi gli handler se impostati
+
+        if (options.AuthenticationHandler is not null)
+            services.AddScoped(typeof(IMqttAuthenticationHandler), options.AuthenticationHandler);
+
+        if (options.ConnectionHandler is not null)
+            services.AddScoped(typeof(IMqttConnectionHandler), options.ConnectionHandler);
+
+        //
+
         return services;
     }
 }

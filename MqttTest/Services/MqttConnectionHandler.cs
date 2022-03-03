@@ -1,10 +1,9 @@
-﻿using MQTTnet.Protocol;
+﻿using MQTTnet.Extensions.Hosting;
 using MQTTnet.Server;
-using MQTTnet.Extensions.Hosting;
 
 namespace MqttTest.Services;
 
-public class MqttConnectionHandler : IBrokerConnectionHandler
+public class MqttConnectionHandler : IMqttConnectionHandler
 {
     private readonly ILogger<MqttConnectionHandler> _logger;
 
@@ -13,26 +12,15 @@ public class MqttConnectionHandler : IBrokerConnectionHandler
         _logger = logger;
     }
 
-    public Task ValidateConnectionAsync(MqttConnectionValidatorContext context)
+    public Task HandleClientConnectedAsync(MqttServerClientConnectedEventArgs eventArgs)
     {
-        /*if (context.ClientId.Length < 10)
-            context.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
-        else if (context.Username != "mySecretUser")
-            context.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
-        else if (context.Password != "mySecretPassword")
-            context.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;*/
-        
-        context.ReasonCode = MqttConnectReasonCode.Success;
+        _logger.LogInformation("Client " + eventArgs.ClientId + " connected");
         return Task.CompletedTask;
     }
 
-    public async Task HandleClientConnectedAsync(MqttServerClientConnectedEventArgs eventArgs)
-    {
-        _logger.LogInformation("Client " + eventArgs.ClientId + " connected");
-    }
-
-    public async Task HandleClientDisconnectedAsync(MqttServerClientDisconnectedEventArgs eventArgs)
+    public Task HandleClientDisconnectedAsync(MqttServerClientDisconnectedEventArgs eventArgs)
     {
         _logger.LogInformation("Client " + eventArgs.ClientId + " disconnected");
+        return Task.CompletedTask;
     }
 }

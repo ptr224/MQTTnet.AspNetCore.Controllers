@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MQTTnet.Extensions.Hosting.Routes;
+using MQTTnet.Protocol;
 using MQTTnet.Server;
 using Polly;
 using Polly.Bulkhead;
@@ -12,7 +13,15 @@ using System.Threading.Tasks;
 
 namespace MQTTnet.Extensions.Hosting.Internals;
 
-internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerApplicationMessageInterceptor, IBroker, IHostedService, IDisposable
+internal sealed class Broker :
+    IMqttServerSubscriptionInterceptor,
+    IMqttServerApplicationMessageInterceptor,
+    IMqttServerConnectionValidator,
+    IMqttServerClientConnectedHandler,
+    IMqttServerClientDisconnectedHandler,
+    IBroker,
+    IHostedService,
+    IDisposable
 {
     private static object ActivateRoute(string[] topic, Route route, object controller)
     {
@@ -49,34 +58,57 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
     private readonly SubscriptionRouteTable _subscriptionRouteTable;
     private readonly PublishRouteTable _publishRouteTable;
 
-    public Broker(ILogger<Broker> logger, IServiceScopeFactory scopeFactory, MqttBrokerOptions options, SubscriptionRouteTable subscriptionRouteTable, PublishRouteTable publishRouteTable, IBrokerConnectionHandler connectionHandler = null)
+    public Broker(
+        ILogger<Broker> logger,
+        IServiceScopeFactory scopeFactory,
+        MqttBrokerOptions options,
+        SubscriptionRouteTable subscriptionRouteTable = null,
+        PublishRouteTable publishRouteTable = null
+        )
     {
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+
         mqttServer = new MqttFactory().CreateMqttServer();
-
-        // Attiva handler connessioni se presente
-        if (connectionHandler is not null)
-        {
-            options
-                .WithConnectionValidator(connectionHandler);
-
-            mqttServer
-                .UseClientConnectedHandler(connectionHandler)
-                .UseClientDisconnectedHandler(connectionHandler);
-        }
-
-        mqttOptions = options
-            .WithSubscriptionInterceptor(this)
-            .WithApplicationMessageInterceptor(this)
-            .Build();
-
         policy = Policy.BulkheadAsync(options.MaxParallelRequests, options.MaxParallelRequests * 4);
         defaultSubscriptionAccept = options.DefaultSubscriptionAccept;
         defaultPublishAccept = options.DefaultPublishAccept;
 
-        _logger = logger;
-        _scopeFactory = scopeFactory;
-        _publishRouteTable = publishRouteTable;
-        _subscriptionRouteTable = subscriptionRouteTable;
+        // Attiva handler sottoscrizioni se necessario
+
+        if (subscriptionRouteTable is not null)
+        {
+            options.WithSubscriptionInterceptor(this);
+            _subscriptionRouteTable = subscriptionRouteTable;
+        }
+
+        // Attiva handler pubblicazioni se necessario
+
+        if (publishRouteTable is not null)
+        {
+            options.WithApplicationMessageInterceptor(this);
+            _publishRouteTable = publishRouteTable;
+        }
+
+        // Attiva handler autenticazione se necessario
+
+        if (options.AuthenticationHandler is not null)
+        {
+            options.WithConnectionValidator(this);
+        }
+
+        // Attiva handler connessioni se necessario
+
+        if (options.ConnectionHandler is not null)
+        {
+            mqttServer
+                .UseClientConnectedHandler(this)
+                .UseClientDisconnectedHandler(this);
+        }
+
+        // Finalizza
+
+        mqttOptions = options.Build();
     }
 
     private async Task<bool> SubscriptionHandler(MqttSubscriptionInterceptorContext context)
@@ -91,7 +123,7 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
                 return defaultSubscriptionAccept;
 
             // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
-            using var scope = _scopeFactory.CreateScope();
+            await using var scope = _scopeFactory.CreateAsyncScope();
             var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
 
             (controller as MqttSubscriptionController).Context = new(context);
@@ -129,7 +161,7 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
                 return defaultPublishAccept;
 
             // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
-            using var scope = _scopeFactory.CreateScope();
+            await using var scope = _scopeFactory.CreateAsyncScope();
             var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
 
             (controller as MqttPublishController).Context = new(context);
@@ -160,6 +192,22 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
         }
     }
 
+    private async Task<MqttConnectReasonCode> AuthenticationHandler(MqttConnectionValidatorContext context)
+    {
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationHandler>();
+
+            return await handler.AuthenticateAsync(new(context));
+        }
+        catch (Exception e)
+        {
+            _logger.LogCritical(e, $"Error in MQTT authentication handler for '{context.ClientId}': ");
+            return MqttConnectReasonCode.UnspecifiedError;
+        }
+    }
+
     public async Task InterceptSubscriptionAsync(MqttSubscriptionInterceptorContext context)
     {
         if (context.ClientId is null)
@@ -170,6 +218,7 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
         else
         {
             // Processa le sottoscrizioni dei client, annullandole se la coda è piena
+
             var result = await policy.ExecuteAndCaptureAsync(() => SubscriptionHandler(context));
             if (result.Outcome == OutcomeType.Successful)
             {
@@ -193,6 +242,7 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
         else
         {
             // Processa le pubblicazioni dei client, annullandole se la coda è piena
+
             var result = await policy.ExecuteAndCaptureAsync(() => PublishHandler(context));
             if (result.Outcome == OutcomeType.Successful)
             {
@@ -203,6 +253,52 @@ internal sealed class Broker : IMqttServerSubscriptionInterceptor, IMqttServerAp
                 context.AcceptPublish = false;
                 _logger.LogWarning($"Blocked publish to '{context.ApplicationMessage.Topic}'");
             }
+        }
+    }
+
+    public async Task ValidateConnectionAsync(MqttConnectionValidatorContext context)
+    {
+        // Processa le autenticazioni dei client, annullandole se la coda è piena
+
+        var result = await policy.ExecuteAndCaptureAsync(() => AuthenticationHandler(context));
+        if (result.Outcome == OutcomeType.Successful)
+        {
+            context.ReasonCode = result.Result;
+        }
+        else
+        {
+            context.ReasonCode = MqttConnectReasonCode.ServerBusy;
+            _logger.LogWarning($"Blocked authentication for '{context.ClientId}'");
+        }
+    }
+
+    public async Task HandleClientConnectedAsync(MqttServerClientConnectedEventArgs eventArgs)
+    {
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var handler = scope.ServiceProvider.GetRequiredService<IMqttConnectionHandler>();
+
+            await handler.HandleClientConnectedAsync(eventArgs);
+        }
+        catch (Exception e)
+        {
+            _logger.LogCritical(e, $"Error in MQTT connection handler for '{eventArgs.ClientId}': ");
+        }
+    }
+
+    public async Task HandleClientDisconnectedAsync(MqttServerClientDisconnectedEventArgs eventArgs)
+    {
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var handler = scope.ServiceProvider.GetRequiredService<IMqttConnectionHandler>();
+
+            await handler.HandleClientDisconnectedAsync(eventArgs);
+        }
+        catch (Exception e)
+        {
+            _logger.LogCritical(e, $"Error in MQTT disconnection handler for '{eventArgs.ClientId}': ");
         }
     }
 

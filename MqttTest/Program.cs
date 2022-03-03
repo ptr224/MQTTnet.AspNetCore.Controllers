@@ -22,8 +22,9 @@ builder.Services.AddMqttBroker(options =>
     options.WithMaxParallelRequests(4);
     options.WithDefaultPublishAccept(false);
     options.WithDefaultSubscriptionAccept(false);
+    options.WithAuthenticationHandler<MqttAuthenticationHandler>();
+    options.WithConnectionHandler<MqttConnectionHandler>();
 });
-builder.Services.AddMqttConnectionHandler<MqttConnectionHandler>();
 
 var app = builder.Build();
 
