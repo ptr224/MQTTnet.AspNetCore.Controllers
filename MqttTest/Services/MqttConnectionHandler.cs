@@ -21,7 +21,7 @@ public class MqttConnectionHandler : IBrokerConnectionHandler
             context.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;
         else if (context.Password != "mySecretPassword")
             context.ReasonCode = MqttConnectReasonCode.BadUserNameOrPassword;*/
-
+        
         context.ReasonCode = MqttConnectReasonCode.Success;
         return Task.CompletedTask;
     }

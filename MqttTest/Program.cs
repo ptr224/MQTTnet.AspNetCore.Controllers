@@ -20,8 +20,8 @@ builder.Services.AddMqttBroker(options =>
     options.WithConnectionBacklog(1000);
     options.WithDefaultEndpointPort(1883);
     options.WithMaxParallelRequests(4);
-    options.WithDefaultPublishAccept(true);
-    options.WithDefaultSubscriptionAccept(true);
+    options.WithDefaultPublishAccept(false);
+    options.WithDefaultSubscriptionAccept(false);
 });
 builder.Services.AddMqttConnectionHandler<MqttConnectionHandler>();
 

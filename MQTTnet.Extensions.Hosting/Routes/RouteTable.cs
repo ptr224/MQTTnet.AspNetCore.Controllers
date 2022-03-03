@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -7,6 +8,19 @@ namespace MQTTnet.Extensions.Hosting.Routes;
 
 internal abstract class RouteTable
 {
+    private class RouteComparer : IEqualityComparer<Route>
+    {
+        public bool Equals(Route x, Route y)
+        {
+            return x.Equals(y);
+        }
+
+        public int GetHashCode([DisallowNull] Route obj)
+        {
+            return 0;
+        }
+    }
+
     protected readonly Route[] _routes;
 
     public RouteTable(IEnumerable<Type> controllers)

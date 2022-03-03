@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -76,7 +74,7 @@ internal sealed class Route : IEquatable<Route>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Template, Method);
+        return base.GetHashCode();
     }
 
     public override bool Equals(object obj)
@@ -126,18 +124,5 @@ internal sealed class Route : IEquatable<Route>
         // Se finora facevano match verifica da lunghezza
 
         return Template.Length == topic.Length;
-    }
-}
-
-internal class RouteComparer : IEqualityComparer<Route>
-{
-    public bool Equals(Route x, Route y)
-    {
-        return x.Equals(y);
-    }
-
-    public int GetHashCode([DisallowNull] Route obj)
-    {
-        return 0;
     }
 }

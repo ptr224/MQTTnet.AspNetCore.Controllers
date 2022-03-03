@@ -12,6 +12,13 @@ public class PublishController : MqttPublishController
         _logger = logger;
     }
 
+    [MqttRoute("+/+/#")]
+    public IMqttPublishResult Answer()
+    {
+        _logger.LogInformation("Message from " + Context.ClientId + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
+        return Publish();
+    }
+
     [MqttRoute("{serial}/stop")]
     public async Task<IMqttPublishResult> ManageStop(string serial)
     {
@@ -19,7 +26,7 @@ public class PublishController : MqttPublishController
         return Stop();
     }
 
-    [MqttRoute("{serial}/forbid/+/#")]
+    [MqttRoute("{serial}/forbid")]
     public async Task<IMqttPublishResult> ManageForbid(string serial)
     {
         _logger.LogInformation("Message from " + serial + " : " + Encoding.UTF8.GetString(Context.ApplicationMessage.Payload));
