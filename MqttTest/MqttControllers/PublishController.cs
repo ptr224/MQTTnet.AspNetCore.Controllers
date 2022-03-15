@@ -15,7 +15,7 @@ public class PublishController : MqttPublishController
     [MqttRoute("+/+/#")]
     public IMqttPublishResult Answer()
     {
-        _logger.LogInformation("Message from " + Context.ClientId + " : " + Context.ApplicationMessage.ConvertPayloadToString());
+        _logger.LogInformation($"Message from \"{Context.ClientId}\": {Context.ApplicationMessage.ConvertPayloadToString()}");
         return Publish();
     }
 
