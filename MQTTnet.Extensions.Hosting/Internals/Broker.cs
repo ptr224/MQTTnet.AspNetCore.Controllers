@@ -34,7 +34,7 @@ internal sealed class Broker :
         else
         {
             var paramsArray = new object[parameters.Length];
-            for (int i = 0; i < topic.Length; i++)
+            for (int i = 0; i < route.Template.Length; i++)
             {
                 var segment = route.Template[i];
                 if (segment.Type == SegmentType.Parametric)
