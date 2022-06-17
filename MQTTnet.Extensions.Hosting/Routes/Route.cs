@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace MQTTnet.Extensions.Hosting.Routes;
 
-internal sealed class Route : IEquatable<Route>
+internal sealed class Route
 {
     public TemplateSegment[] Template { get; }
     public MethodInfo Method { get; }
@@ -70,38 +70,6 @@ internal sealed class Route : IEquatable<Route>
 
         Template = segments.ToArray();
         Method = action;
-    }
-
-    public override int GetHashCode()
-    {
-        return base.GetHashCode();
-    }
-
-    public override bool Equals(object obj)
-    {
-        return obj is Route other ? Equals(other) : base.Equals(obj);
-    }
-
-    public bool Equals(Route other)
-    {
-        int count = Math.Min(Template.Length, other.Template.Length);
-
-        for (int i = 0; i < count; i++)
-        {
-            // Se almeno uno dei due segmenti è # non importa cosa c'è dopo, sono uguali
-
-            if (Template[i].Type == SegmentType.MultiLevelWildcard || other.Template[i].Type == SegmentType.MultiLevelWildcard)
-                return true;
-
-            // Se ancora non è stato trovato # non matchano se hanno entrambe almeno un segmento non parametrico con un nome diverso nella medesima posizione
-
-            if (Template[i].Type == SegmentType.Normal && other.Template[i].Type == SegmentType.Normal && Template[i].Segment != other.Template[i].Segment)
-                return false;
-        }
-
-        // Se finora erano uguali verifica da lunghezza
-
-        return Template.Length == other.Template.Length;
     }
 
     public bool Match(string[] topic)
