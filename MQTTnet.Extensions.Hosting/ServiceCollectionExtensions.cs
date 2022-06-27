@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MQTTnet.Extensions.Hosting.Internals;
+using MQTTnet.Server;
 using System;
 using System.Linq;
 
@@ -7,18 +8,19 @@ namespace MQTTnet.Extensions.Hosting;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddMqttBroker(this IServiceCollection services, Action<MqttBrokerOptions> configureOptions)
+    public static IServiceCollection AddMqttBroker(this IServiceCollection services, Action<MqttServerOptionsBuilder, MqttHandlingOptionsBuilder> configureOptions)
     {
-        var options = new MqttBrokerOptions();
-        configureOptions(options);
+        var serverOptions = new MqttServerOptionsBuilder();
+        var handlingOptions = new MqttHandlingOptionsBuilder();
+        configureOptions(serverOptions, handlingOptions);
 
         // Aggiungi controller se impostati
 
-        if (options.ControllerAssemblies is not null)
+        if (handlingOptions.ControllerAssemblies is not null)
         {
             // Trova tutti i controller e aggiungili alla DI
 
-            var controllers = options.ControllerAssemblies
+            var controllers = handlingOptions.ControllerAssemblies
                 .SelectMany(a => a.GetTypes())
                 .Where(type => type.IsSubclassOf(typeof(MqttBaseController)) && !type.IsAbstract);
 
@@ -33,15 +35,16 @@ public static class ServiceCollectionExtensions
 
         // Aggiungi gli handler se impostati
 
-        if (options.AuthenticationHandler is not null)
-            services.AddScoped(typeof(IMqttAuthenticationHandler), options.AuthenticationHandler);
+        if (handlingOptions.AuthenticationHandler is not null)
+            services.AddScoped(typeof(IMqttAuthenticationHandler), handlingOptions.AuthenticationHandler);
 
-        if (options.ConnectionHandler is not null)
-            services.AddScoped(typeof(IMqttConnectionHandler), options.ConnectionHandler);
+        if (handlingOptions.ConnectionHandler is not null)
+            services.AddScoped(typeof(IMqttConnectionHandler), handlingOptions.ConnectionHandler);
 
         // Aggiungi le impostazioni ed il Broker
 
-        services.AddSingleton(options);
+        services.AddSingleton(serverOptions);
+        services.AddSingleton(handlingOptions);
         services.AddSingleton<Broker>();
         services.AddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
         services.AddHostedService(p => p.GetRequiredService<Broker>());

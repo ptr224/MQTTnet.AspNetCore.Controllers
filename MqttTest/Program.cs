@@ -10,14 +10,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddMqttBroker(options =>
+builder.Services.AddMqttBroker((serverOptions, handlingOptions) =>
 {
-    options.WithConnectionBacklog(1000);
-    options.WithDefaultEndpointPort(1883);
-    options.WithMaxParallelRequests(4);
-    options.WithControllers(AppDomain.CurrentDomain.GetAssemblies());
-    options.WithAuthenticationHandler<MqttAuthenticationHandler>();
-    options.WithConnectionHandler<MqttConnectionHandler>();
+    serverOptions
+        .WithConnectionBacklog(1000)
+        .WithDefaultEndpoint()
+        .WithDefaultEndpointPort(1883);
+
+    handlingOptions
+        .WithMaxParallelRequests(4)
+        .WithControllers(AppDomain.CurrentDomain.GetAssemblies())
+        .WithAuthenticationHandler<MqttAuthenticationHandler>()
+        .WithConnectionHandler<MqttConnectionHandler>();
 });
 
 var app = builder.Build();

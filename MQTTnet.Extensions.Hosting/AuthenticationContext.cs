@@ -15,7 +15,7 @@ public class AuthenticationContext
     public byte[] RawPassword { get; }
     public string Password { get; }
 
-    public AuthenticationContext(MqttConnectionValidatorContext context)
+    public AuthenticationContext(ValidatingConnectionEventArgs context)
     {
         ClientId = context.ClientId;
         Endpoint = context.Endpoint;
