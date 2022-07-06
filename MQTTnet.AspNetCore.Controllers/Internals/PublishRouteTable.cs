@@ -1,9 +1,9 @@
-﻿using MQTTnet.Extensions.Hosting.Routes;
+﻿using MQTTnet.AspNetCore.Controllers.Routes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MQTTnet.Extensions.Hosting.Internals;
+namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal sealed class PublishRouteTable : RouteTable
 {

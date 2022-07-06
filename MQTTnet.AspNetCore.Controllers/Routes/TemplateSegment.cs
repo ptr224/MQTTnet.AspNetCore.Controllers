@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace MQTTnet.Extensions.Hosting.Routes;
+namespace MQTTnet.AspNetCore.Controllers.Routes;
 
 internal enum SegmentType
 {

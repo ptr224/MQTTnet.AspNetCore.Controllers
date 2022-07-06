@@ -1,4 +1,4 @@
-﻿using MQTTnet.Extensions.Hosting;
+﻿using MQTTnet.AspNetCore.Controllers;
 
 namespace MqttTest.MqttControllers;
 

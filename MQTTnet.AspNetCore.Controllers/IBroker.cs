@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace MQTTnet.Extensions.Hosting;
+namespace MQTTnet.AspNetCore.Controllers;
 
 public interface IBroker
 {

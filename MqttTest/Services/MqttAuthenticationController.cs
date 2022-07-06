@@ -1,9 +1,9 @@
-﻿using MQTTnet.Extensions.Hosting;
+﻿using MQTTnet.AspNetCore.Controllers;
 using MQTTnet.Protocol;
 
 namespace MqttTest.Services;
 
-public class MqttAuthenticationHandler : IMqttAuthenticationHandler
+public class MqttAuthenticationController : IMqttAuthenticationController
 {
     public Task<MqttConnectReasonCode> AuthenticateAsync(AuthenticationContext context)
     {

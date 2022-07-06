@@ -1,5 +1,6 @@
+using MQTTnet.AspNetCore;
+using MQTTnet.AspNetCore.Controllers;
 using MqttTest.Services;
-using MQTTnet.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,18 +11,25 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddMqttBroker((serverOptions, handlingOptions) =>
-{
-    serverOptions
-        .WithConnectionBacklog(1000)
-        .WithDefaultEndpoint()
-        .WithDefaultEndpointPort(1883);
+builder.Services
+    .AddMqttServer(options =>
+    {
+        options
+            .WithConnectionBacklog(1000)
+            .WithDefaultEndpoint()
+            .WithDefaultEndpointPort(1883);
+    })
+    .AddMqttTcpServerAdapter()
+    .AddMqttWebSocketServerAdapter()
+    .AddConnections();
 
-    handlingOptions
+builder.Services.AddMqttControllers(options =>
+{
+    options
         .WithMaxParallelRequests(4)
         .WithControllers(AppDomain.CurrentDomain.GetAssemblies())
-        .WithAuthenticationHandler<MqttAuthenticationHandler>()
-        .WithConnectionHandler<MqttConnectionHandler>();
+        .WithAuthenticationController<MqttAuthenticationController>()
+        .WithConnectionController<MqttConnectionController>();
 });
 
 var app = builder.Build();
@@ -36,5 +44,8 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapMqtt("/mqtt");
+
+app.UseMqttControllers();
 
 app.Run();

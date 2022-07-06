@@ -2,7 +2,7 @@
 using MQTTnet.Server;
 using System.Security.Cryptography.X509Certificates;
 
-namespace MQTTnet.Extensions.Hosting;
+namespace MQTTnet.AspNetCore.Controllers;
 
 public class AuthenticationContext
 {

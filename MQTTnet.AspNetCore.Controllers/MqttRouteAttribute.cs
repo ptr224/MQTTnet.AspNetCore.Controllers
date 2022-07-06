@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MQTTnet.Extensions.Hosting;
+namespace MQTTnet.AspNetCore.Controllers;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public sealed class MqttRouteAttribute : Attribute

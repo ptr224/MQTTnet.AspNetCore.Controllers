@@ -1,13 +1,13 @@
-﻿using MQTTnet.Extensions.Hosting;
+﻿using MQTTnet.AspNetCore.Controllers;
 using MQTTnet.Server;
 
 namespace MqttTest.Services;
 
-public class MqttConnectionHandler : IMqttConnectionHandler
+public class MqttConnectionController : IMqttConnectionController
 {
-    private readonly ILogger<MqttConnectionHandler> _logger;
+    private readonly ILogger<MqttConnectionController> _logger;
 
-    public MqttConnectionHandler(ILogger<MqttConnectionHandler> logger)
+    public MqttConnectionController(ILogger<MqttConnectionController> logger)
     {
         _logger = logger;
     }

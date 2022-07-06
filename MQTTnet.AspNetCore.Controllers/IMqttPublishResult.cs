@@ -1,4 +1,4 @@
-﻿namespace MQTTnet.Extensions.Hosting;
+﻿namespace MQTTnet.AspNetCore.Controllers;
 
 public interface IMqttPublishResult
 {

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace MQTTnet.Extensions.Hosting.Routes;
+namespace MQTTnet.AspNetCore.Controllers.Routes;
 
 internal sealed class Route
 {

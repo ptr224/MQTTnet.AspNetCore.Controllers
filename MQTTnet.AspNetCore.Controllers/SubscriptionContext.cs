@@ -2,7 +2,7 @@
 using MQTTnet.Server;
 using System.Threading;
 
-namespace MQTTnet.Extensions.Hosting;
+namespace MQTTnet.AspNetCore.Controllers;
 
 public class SubscriptionContext
 {
