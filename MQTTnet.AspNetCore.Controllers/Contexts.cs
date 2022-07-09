@@ -1,6 +1,8 @@
 ﻿using MQTTnet.Formatter;
+using MQTTnet.Packets;
 using MQTTnet.Server;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
@@ -25,5 +27,33 @@ public class AuthenticationContext
         Username = context.Username;
         RawPassword = context.RawPassword;
         Password = context.Password;
+    }
+}
+
+public class PublishContext
+{
+    public CancellationToken RequestAborted { get; }
+    public string ClientId { get; }
+    public MqttApplicationMessage ApplicationMessage { get; }
+
+    public PublishContext(InterceptingPublishEventArgs context)
+    {
+        RequestAborted = context.CancellationToken;
+        ClientId = context.ClientId;
+        ApplicationMessage = context.ApplicationMessage;
+    }
+}
+
+public class SubscriptionContext
+{
+    public CancellationToken RequestAborted { get; }
+    public string ClientId { get; }
+    public MqttTopicFilter TopicFilter { get; }
+
+    public SubscriptionContext(InterceptingSubscriptionEventArgs context)
+    {
+        RequestAborted = context.CancellationToken;
+        ClientId = context.ClientId;
+        TopicFilter = context.TopicFilter;
     }
 }

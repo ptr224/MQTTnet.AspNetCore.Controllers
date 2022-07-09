@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using MQTTnet.AspNetCore;
 using MQTTnet.AspNetCore.Controllers.Internals;
 using System;
 using System.Linq;
@@ -22,15 +21,14 @@ public static class ServiceCollectionExtensions
 
             var controllers = options.ControllerAssemblies
                 .SelectMany(a => a.GetTypes())
-                .Where(type => type.IsSubclassOf(typeof(MqttBaseController)) && !type.IsAbstract);
+                .Where(type => type.IsSubclassOf(typeof(MqttControllerBase)) && !type.IsAbstract);
 
             foreach (var controller in controllers)
                 services.AddScoped(controller);
 
-            // Aggiungi le RouteTable
+            // Aggiungi la RouteTable
 
-            services.AddSingleton(new SubscriptionRouteTable(controllers.Where(type => type.IsSubclassOf(typeof(MqttSubscriptionController)))));
-            services.AddSingleton(new PublishRouteTable(controllers.Where(type => type.IsSubclassOf(typeof(MqttPublishController)))));
+            services.AddSingleton(new RouteTable(controllers));
         }
 
         // Aggiungi gli handler se impostati
@@ -46,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(options);
         services.AddSingleton<Broker>();
         services.AddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
+
         return services;
     }
 

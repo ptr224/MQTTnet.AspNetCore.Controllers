@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace MQTTnet.AspNetCore.Controllers.Routes;
+namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal class RouteComparer : IEqualityComparer<Route>
 {

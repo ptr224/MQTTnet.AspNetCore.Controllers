@@ -2,7 +2,17 @@
 using System.Linq;
 using System.Reflection;
 
-namespace MQTTnet.AspNetCore.Controllers.Routes;
+namespace MQTTnet.AspNetCore.Controllers.Internals;
+
+internal enum SegmentType
+{
+    Normal,
+    Parametric,
+    SingleLevelWildcard,
+    MultiLevelWildcard
+}
+
+internal record struct TemplateSegment(string Segment, SegmentType Type, ParameterInfo ParameterInfo);
 
 internal sealed class Route
 {
