@@ -57,76 +57,31 @@ internal sealed class Broker : IBroker, IDisposable
         hasConnectionHandler = options.ConnectionController is not null;
     }
 
-    private async Task<MqttConnectReasonCode> AuthenticationHandler(ValidatingConnectionEventArgs context)
-    {
-        try
-        {
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
-
-            return await handler.AuthenticateAsync(new(context));
-        }
-        catch (Exception e)
-        {
-            _logger.LogCritical(e, "Error in MQTT authentication handler for '{ClientId}': ", context.ClientId);
-            return MqttConnectReasonCode.UnspecifiedError;
-        }
-    }
-
     private async Task ValidatingConnectionAsync(ValidatingConnectionEventArgs context)
     {
         // Processa le autenticazioni dei client, annullandole se la coda è piena
 
-        var result = await policy.ExecuteAndCaptureAsync(() => AuthenticationHandler(context));
-        if (result.Outcome == OutcomeType.Successful)
+        var result = await policy.ExecuteAndCaptureAsync(async () =>
         {
-            context.ReasonCode = result.Result;
-        }
-        else
-        {
-            context.ReasonCode = MqttConnectReasonCode.ServerBusy;
-            _logger.LogWarning("Blocked authentication for '{ClientId}'", context.ClientId);
-        }
-    }
-
-    private async Task<IMqttPublishResult> PublishHandler(InterceptingPublishEventArgs context)
-    {
-        try
-        {
-            // Controlla che il topic abbia un'azione corrispondente
-
-            string[] topic = context.ApplicationMessage.Topic.Split('/');
-            var route = _routeTable.MatchPublish(topic);
-
-            if (route is null)
-                return null;
-
-            // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
-
             await using var scope = _scopeFactory.CreateAsyncScope();
-            var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+            var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
 
-            (controller as MqttControllerBase).PublishContext = new(context);
+            await handler.AuthenticateAsync(context);
+        });
 
-            // Ritorna il risultato dell'operazione
-
-            return ActivateRoute(topic, route, controller) switch
+        if (result.Outcome == OutcomeType.Failure)
+        {
+            switch (result.FinalException)
             {
-                IMqttPublishResult obj => obj,
-                Task<IMqttPublishResult> task => await task,
-                ValueTask<IMqttPublishResult> valueTask => await valueTask,
-                _ => throw new NotSupportedException()
-            };
-        }
-        catch (TargetInvocationException e)
-        {
-            _logger.LogCritical(e.InnerException, "Error in MQTT publish handler for '{Topic}': ", context.ApplicationMessage.Topic);
-            return null;
-        }
-        catch (Exception e)
-        {
-            _logger.LogCritical(e, "Error during MQTT publish handler activation for '{Topic}': ", context.ApplicationMessage.Topic);
-            return null;
+                case null:
+                    context.ReasonCode = MqttConnectReasonCode.ServerBusy;
+                    _logger.LogWarning("Blocked authentication for '{ClientId}'", context.ClientId);
+                    break;
+                default:
+                    context.ReasonCode = MqttConnectReasonCode.UnspecifiedError;
+                    _logger.LogCritical(result.FinalException, "Error in MQTT authentication handler for '{ClientId}': ", context.ClientId);
+                    break;
+            }
         }
     }
 
@@ -134,60 +89,62 @@ internal sealed class Broker : IBroker, IDisposable
     {
         // Processa le pubblicazioni dei client, annullandole se la coda è piena
 
-        var result = await policy.ExecuteAndCaptureAsync(() => PublishHandler(context));
-        if (result.Outcome == OutcomeType.Successful && result.Result is not null)
-        {
-            context.CloseConnection = result.Result.CloseConnection;
-            context.ProcessPublish = result.Result.Process;
-
-            if (!result.Result.Publish)
-                context.ApplicationMessage = null;
-        }
-        else
-        {
-            context.ProcessPublish = false;
-            _logger.LogWarning("Blocked publish to '{Topic}'", context.ApplicationMessage.Topic);
-        }
-    }
-
-    private async Task<IMqttSubscribeResult> SubscriptionHandler(InterceptingSubscriptionEventArgs context)
-    {
-        try
+        var result = await policy.ExecuteAndCaptureAsync(async () =>
         {
             // Controlla che il topic abbia un'azione corrispondente
 
-            string[] topic = context.TopicFilter.Topic.Split('/');
-            var route = _routeTable.MatchSubscribe(topic);
+            string[] topic = context.ApplicationMessage.Topic.Split('/');
+            var route = _routeTable.MatchPublish(topic);
 
             if (route is null)
-                return null;
+            {
+                context.ProcessPublish = false;
+                context.Response.ReasonCode = MqttPubAckReasonCode.TopicNameInvalid;
+                return;
+            }
 
             // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
 
             await using var scope = _scopeFactory.CreateAsyncScope();
             var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
 
-            (controller as MqttControllerBase).SubscriptionContext = new(context);
+            context.CloseConnection = false;
+            context.ProcessPublish = true;
+            (controller as MqttControllerBase).PublishContext = context;
 
-            // Ritorna il risultato dell'operazione
+            // Attiva route ed eventualmente attendi
 
-            return ActivateRoute(topic, route, controller) switch
+            var obj = ActivateRoute(topic, route, controller);
+
+            if (obj is Task task)
             {
-                IMqttSubscribeResult obj => obj,
-                Task<IMqttSubscribeResult> task => await task,
-                ValueTask<IMqttSubscribeResult> valueTask => await valueTask,
-                _ => throw new NotSupportedException()
-            };
-        }
-        catch (TargetInvocationException e)
+                await task;
+            }
+            else if (obj is ValueTask valueTask)
+            {
+                await valueTask;
+            }
+        });
+
+        if (result.Outcome == OutcomeType.Failure)
         {
-            _logger.LogCritical(e.InnerException, "Error in MQTT subscription handler for '{topic}': ", context.TopicFilter.Topic);
-            return null;
-        }
-        catch (Exception e)
-        {
-            _logger.LogCritical(e, "Error during MQTT subscription handler activation for '{topic}': ", context.TopicFilter.Topic);
-            return null;
+            context.ProcessPublish = false;
+
+            switch (result.FinalException)
+            {
+                case null:
+                    context.Response.ReasonCode = MqttPubAckReasonCode.QuotaExceeded;
+                    _logger.LogWarning("Blocked publish to '{Topic}'", context.ApplicationMessage.Topic);
+                    break;
+                case TargetInvocationException tie:
+                    context.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
+                    _logger.LogCritical(tie.InnerException, "Error in MQTT publish handler for '{Topic}': ", context.ApplicationMessage.Topic);
+                    break;
+                default:
+                    context.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
+                    _logger.LogCritical(result.FinalException, "Error during MQTT publish handler activation for '{Topic}': ", context.ApplicationMessage.Topic);
+                    break;
+            }
         }
     }
 
@@ -195,16 +152,62 @@ internal sealed class Broker : IBroker, IDisposable
     {
         // Processa le sottoscrizioni dei client, annullandole se la coda è piena
 
-        var result = await policy.ExecuteAndCaptureAsync(() => SubscriptionHandler(context));
-        if (result.Outcome == OutcomeType.Successful && result.Result is not null)
+        var result = await policy.ExecuteAndCaptureAsync(async () =>
         {
-            context.CloseConnection = result.Result.CloseConnection;
-            context.ProcessSubscription = result.Result.Process;
-        }
-        else
+            // Controlla che il topic abbia un'azione corrispondente
+
+            string[] topic = context.TopicFilter.Topic.Split('/');
+            var route = _routeTable.MatchSubscribe(topic);
+
+            if (route is null)
+            {
+                context.ProcessSubscription = false;
+                context.Response.ReasonCode = MqttSubscribeReasonCode.TopicFilterInvalid;
+                return;
+            }
+
+            // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
+
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+
+            context.CloseConnection = false;
+            context.ProcessSubscription = true;
+            (controller as MqttControllerBase).SubscriptionContext = context;
+
+            // Attiva route ed eventualmente attendi
+
+            var obj = ActivateRoute(topic, route, controller);
+
+            if (obj is Task task)
+            {
+                await task;
+            }
+            else if (obj is ValueTask valueTask)
+            {
+                await valueTask;
+            }
+        });
+
+        if (result.Outcome == OutcomeType.Failure)
         {
             context.ProcessSubscription = false;
-            _logger.LogWarning("Blocked subscription to '{Topic}'", context.TopicFilter.Topic);
+
+            switch (result.FinalException)
+            {
+                case null:
+                    context.Response.ReasonCode = MqttSubscribeReasonCode.QuotaExceeded;
+                    _logger.LogWarning("Blocked subscription to '{Topic}'", context.TopicFilter.Topic);
+                    break;
+                case TargetInvocationException tie:
+                    context.Response.ReasonCode = MqttSubscribeReasonCode.UnspecifiedError;
+                    _logger.LogCritical(tie.InnerException, "Error in MQTT subscription handler for '{topic}': ", context.TopicFilter.Topic);
+                    break;
+                default:
+                    context.Response.ReasonCode = MqttSubscribeReasonCode.UnspecifiedError;
+                    _logger.LogCritical(result.FinalException, "Error during MQTT subscription handler activation for '{topic}': ", context.TopicFilter.Topic);
+                    break;
+            }
         }
     }
 

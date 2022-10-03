@@ -1,5 +1,4 @@
-﻿using MQTTnet.Protocol;
-using MQTTnet.Server;
+﻿using MQTTnet.Server;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers;
@@ -11,24 +10,11 @@ public interface IBroker
 
 public interface IMqttAuthenticationController
 {
-    Task<MqttConnectReasonCode> AuthenticateAsync(AuthenticationContext context);
+    Task AuthenticateAsync(ValidatingConnectionEventArgs context);
 }
 
 public interface IMqttConnectionController
 {
-    Task ClientConnectedAsync(ClientConnectedEventArgs eventArgs);
-    Task ClientDisconnectedAsync(ClientDisconnectedEventArgs eventArgs);
-}
-
-public interface IMqttPublishResult
-{
-    bool CloseConnection { get; }
-    bool Process { get; }
-    bool Publish { get; }
-}
-
-public interface IMqttSubscribeResult
-{
-    bool CloseConnection { get; }
-    bool Process { get; }
+    Task ClientConnectedAsync(ClientConnectedEventArgs context);
+    Task ClientDisconnectedAsync(ClientDisconnectedEventArgs context);
 }

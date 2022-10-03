@@ -12,15 +12,15 @@ public class MqttConnectionController : IMqttConnectionController
         _logger = logger;
     }
 
-    public Task ClientConnectedAsync(ClientConnectedEventArgs eventArgs)
+    public Task ClientConnectedAsync(ClientConnectedEventArgs context)
     {
-        _logger.LogInformation("Client {ClientId} connected", eventArgs.ClientId);
+        _logger.LogInformation("Client {ClientId} connected", context.ClientId);
         return Task.CompletedTask;
     }
 
-    public Task ClientDisconnectedAsync(ClientDisconnectedEventArgs eventArgs)
+    public Task ClientDisconnectedAsync(ClientDisconnectedEventArgs context)
     {
-        _logger.LogInformation("Client {ClientId} disconnected", eventArgs.ClientId);
+        _logger.LogInformation("Client {ClientId} disconnected", context.ClientId);
         return Task.CompletedTask;
     }
 }

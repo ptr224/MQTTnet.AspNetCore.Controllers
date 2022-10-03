@@ -13,58 +13,51 @@ public class MqttController : MqttControllerBase
     }
 
     [MqttPublish("+/+/#")]
-    public IMqttPublishResult Answer()
+    public void Answer()
     {
-        _logger.LogInformation("Message from \"{clientId}\": {payload}", PublishContext.ClientId, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        return Publish();
+        PublishContext.ProcessPublish = true;
+        _logger.LogInformation("Message from {clientId} : {payload}", PublishContext.ClientId, PublishContext.ApplicationMessage.ConvertPayloadToString());
     }
 
     [MqttPublish("{serial}/kickout")]
-    public IMqttPublishResult ManageKickout(string serial)
+    public void ManageKickout(string serial)
     {
+        PublishContext.CloseConnection = true;
         _logger.LogInformation("Message from {serial} : {payload}", serial, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        return KickOutPublish();
     }
 
     [MqttPublish("{serial}/stop")]
-    public IMqttPublishResult ManageStop(string serial)
+    public void ManageStop(string serial)
     {
+        PublishContext.ProcessPublish = false;
         _logger.LogInformation("Message from {serial} : {payload}", serial, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        return StopPublish();
-    }
-
-    [MqttPublish("{serial}/forbid")]
-    public IMqttPublishResult ManageForbid(string serial)
-    {
-        _logger.LogInformation("Message from {serial} : {payload}", serial, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        return ForbidPublish();
     }
 
     [MqttPublish("{serial}/publish")]
-    public IMqttPublishResult ManagePublish(string serial)
+    public void ManagePublish(string serial)
     {
+        PublishContext.ProcessPublish = true;
         _logger.LogInformation("Message from {serial} : {payload}", serial, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        return Publish();
     }
 
     [MqttSubscribe("+")]
-    public IMqttSubscribeResult Root()
+    public void Root()
     {
-        _logger.LogInformation("Accept subscription to: {topic}", SubscriptionContext.TopicFilter.Topic);
-        return Subscribe();
+        SubscriptionContext.ProcessSubscription = true;
+        _logger.LogInformation("Accept subscription to {topic}", SubscriptionContext.TopicFilter.Topic);
     }
 
     [MqttSubscribe("+/si/#")]
-    public IMqttSubscribeResult Accept()
+    public void Accept()
     {
-        _logger.LogInformation("Accept subscription to: {topic}", SubscriptionContext.TopicFilter.Topic);
-        return Subscribe();
+        SubscriptionContext.ProcessSubscription = true;
+        _logger.LogInformation("Accept subscription to {topic}", SubscriptionContext.TopicFilter.Topic);
     }
 
     [MqttSubscribe("+/no/#")]
-    public IMqttSubscribeResult Forbid()
+    public void Forbid()
     {
-        _logger.LogInformation("Forbid subscription to: {topic}", SubscriptionContext.TopicFilter.Topic);
-        return ForbidSubscribe();
+        SubscriptionContext.ProcessSubscription = false;
+        _logger.LogInformation("Forbid subscription to {topic}", SubscriptionContext.TopicFilter.Topic);
     }
 }

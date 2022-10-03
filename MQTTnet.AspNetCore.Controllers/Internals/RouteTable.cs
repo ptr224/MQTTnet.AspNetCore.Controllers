@@ -8,13 +8,13 @@ namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal class RouteTable
 {
-    private static void ThrowIfInvalidReturnType<T>(MethodInfo method)
+    private static void ThrowIfInvalidReturnType(MethodInfo method)
     {
         var validTypes = new[]
         {
-            typeof(T),
-            typeof(Task<T>),
-            typeof(ValueTask<T>)
+            typeof(void),
+            typeof(Task),
+            typeof(ValueTask)
         };
 
         if (!validTypes.Contains(method.ReturnType))
@@ -54,7 +54,7 @@ internal class RouteTable
                 var publishAttribute = method.GetCustomAttribute<MqttPublishAttribute>(false);
                 if (publishAttribute is not null)
                 {
-                    ThrowIfInvalidReturnType<IMqttPublishResult>(method);
+                    ThrowIfInvalidReturnType(method);
 
                     // Prende i template del metodo e del controller e li unisce
 
@@ -69,7 +69,7 @@ internal class RouteTable
                 var subscribeAttribute = method.GetCustomAttribute<MqttSubscribeAttribute>(false);
                 if (subscribeAttribute is not null)
                 {
-                    ThrowIfInvalidReturnType<IMqttSubscribeResult>(method);
+                    ThrowIfInvalidReturnType(method);
 
                     // Prende i template del metodo e del controller e li unisce
 
