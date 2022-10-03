@@ -12,13 +12,14 @@ namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal sealed class Broker : IBroker, IDisposable
 {
-    private static object ActivateRoute(string[] topic, Route route, object controller)
+    private static async ValueTask ActivateRoute(string[] topic, Route route, object controller)
     {
         var parameters = route.Method.GetParameters();
+        object returnValue;
 
         if (parameters.Length == 0)
         {
-            return route.Method.Invoke(controller, null);
+            returnValue = route.Method.Invoke(controller, null);
         }
         else
         {
@@ -33,7 +34,16 @@ internal sealed class Broker : IBroker, IDisposable
                 }
             }
 
-            return route.Method.Invoke(controller, paramsArray);
+            returnValue = route.Method.Invoke(controller, paramsArray);
+        }
+
+        if (returnValue is Task task)
+        {
+            await task;
+        }
+        else if (returnValue is ValueTask valueTask)
+        {
+            await valueTask;
         }
     }
 
@@ -100,29 +110,19 @@ internal sealed class Broker : IBroker, IDisposable
             {
                 context.ProcessPublish = false;
                 context.Response.ReasonCode = MqttPubAckReasonCode.TopicNameInvalid;
-                return;
             }
-
-            // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
-
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
-
-            context.CloseConnection = false;
-            context.ProcessPublish = true;
-            (controller as MqttControllerBase).PublishContext = context;
-
-            // Attiva route ed eventualmente attendi
-
-            var obj = ActivateRoute(topic, route, controller);
-
-            if (obj is Task task)
+            else
             {
-                await task;
-            }
-            else if (obj is ValueTask valueTask)
-            {
-                await valueTask;
+                // Crea scope, preleva controller, imposta contesto con valori di default ed attiva route
+
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+
+                context.CloseConnection = false;
+                context.ProcessPublish = true;
+                (controller as MqttControllerBase).PublishContext = context;
+
+                await ActivateRoute(topic, route, controller);
             }
         });
 
@@ -163,29 +163,19 @@ internal sealed class Broker : IBroker, IDisposable
             {
                 context.ProcessSubscription = false;
                 context.Response.ReasonCode = MqttSubscribeReasonCode.TopicFilterInvalid;
-                return;
             }
-
-            // Crea lo scope, preleva il controller, imposta il contesto ed esegue l'azione richiesta con i parametri dati se presenti
-
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
-
-            context.CloseConnection = false;
-            context.ProcessSubscription = true;
-            (controller as MqttControllerBase).SubscriptionContext = context;
-
-            // Attiva route ed eventualmente attendi
-
-            var obj = ActivateRoute(topic, route, controller);
-
-            if (obj is Task task)
+            else
             {
-                await task;
-            }
-            else if (obj is ValueTask valueTask)
-            {
-                await valueTask;
+                // Crea scope, preleva controller, imposta contesto con valori di default ed attiva route
+
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+
+                context.CloseConnection = false;
+                context.ProcessSubscription = true;
+                (controller as MqttControllerBase).SubscriptionContext = context;
+
+                await ActivateRoute(topic, route, controller);
             }
         });
 
