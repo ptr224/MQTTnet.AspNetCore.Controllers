@@ -7,7 +7,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -19,18 +18,16 @@ builder.Services
             .WithDefaultEndpoint()
             .WithDefaultEndpointPort(1883);
     })
+    .AddMqttControllers(options =>
+    {
+        options
+            .WithControllers(AppDomain.CurrentDomain.GetAssemblies())
+            .WithAuthenticationController<MqttAuthenticationController>()
+            .WithConnectionController<MqttConnectionController>();
+    })
     .AddMqttTcpServerAdapter()
     .AddMqttWebSocketServerAdapter()
     .AddConnections();
-
-builder.Services.AddMqttControllers(options =>
-{
-    options
-        .WithMaxParallelRequests(4)
-        .WithControllers(AppDomain.CurrentDomain.GetAssemblies())
-        .WithAuthenticationController<MqttAuthenticationController>()
-        .WithConnectionController<MqttConnectionController>();
-});
 
 var app = builder.Build();
 

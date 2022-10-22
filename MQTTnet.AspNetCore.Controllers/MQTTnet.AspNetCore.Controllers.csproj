@@ -8,12 +8,11 @@
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Authors>LambdaCom</Authors>
     <Copyright>Copyright (c) LambdaCom 2022</Copyright>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="MQTTnet.AspNetCore" Version="4.1.1.318" />
-    <PackageReference Include="Polly" Version="7.2.3" />
   </ItemGroup>
 
 </Project>
