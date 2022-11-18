@@ -6,17 +6,26 @@ namespace MqttTest.MqttControllers;
 public class MqttController : MqttControllerBase
 {
     private readonly ILogger<MqttController> _logger;
+    private readonly IBroker _broker;
 
-    public MqttController(ILogger<MqttController> logger)
+    public MqttController(ILogger<MqttController> logger, IBroker broker)
     {
         _logger = logger;
+        _broker = broker;
     }
 
     [MqttPublish("+/+/#")]
-    public void Answer()
+    public async Task Answer()
     {
         PublishContext.ProcessPublish = true;
         _logger.LogInformation("Message from {clientId} : {payload}", PublishContext.ClientId, PublishContext.ApplicationMessage.ConvertPayloadToString());
+        await _broker.Send(new MqttApplicationMessageBuilder()
+                .WithTopic($"{PublishContext.ApplicationMessage.Topic}/ans")
+                .WithPayload(PublishContext.ApplicationMessage.Payload)
+                .WithQualityOfServiceLevel(PublishContext.ApplicationMessage.QualityOfServiceLevel)
+                .WithRetainFlag(PublishContext.ApplicationMessage.Retain)
+                .Build()
+                );
     }
 
     [MqttPublish("{serial}/kickout")]

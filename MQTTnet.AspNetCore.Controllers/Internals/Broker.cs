@@ -50,6 +50,7 @@ internal sealed class Broker : IBroker
     private readonly RouteTable _routeTable;
     private readonly bool hasAuthenticationHandler;
     private readonly bool hasConnectionHandler;
+    private readonly string serverId;
 
     private MqttServer mqttServer;
 
@@ -61,18 +62,28 @@ internal sealed class Broker : IBroker
 
         hasAuthenticationHandler = options.AuthenticationController is not null;
         hasConnectionHandler = options.ConnectionController is not null;
+        serverId = Guid.NewGuid().ToString("N");
     }
 
     private async Task ValidatingConnectionAsync(ValidatingConnectionEventArgs context)
     {
         try
         {
-            // Autentica client
+            if (context.ClientId == serverId)
+            {
+                // Impedisci accesso se stesso ID del server
 
-            await using var scope = _scopeFactory.CreateAsyncScope();
-            var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
+                context.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
+            }
+            else
+            {
+                // Autentica client
 
-            await handler.AuthenticateAsync(context);
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
+
+                await handler.AuthenticateAsync(context);
+            }
         }
         catch (Exception e)
         {
@@ -85,6 +96,11 @@ internal sealed class Broker : IBroker
     {
         try
         {
+            // Ignora i messaggi del server
+
+            if (context.ClientId == serverId)
+                return;
+
             // Controlla che il topic abbia un'azione corrispondente
 
             string[] topic = context.ApplicationMessage.Topic.Split('/');
@@ -127,6 +143,11 @@ internal sealed class Broker : IBroker
     {
         try
         {
+            // Ignora i messaggi del server
+
+            if (context.ClientId == serverId)
+                return;
+
             // Controlla che il topic abbia un'azione corrispondente
 
             string[] topic = context.TopicFilter.Topic.Split('/');
@@ -225,6 +246,9 @@ internal sealed class Broker : IBroker
 
     public Task Send(MqttApplicationMessage message)
     {
-        return mqttServer.InjectApplicationMessage(new(message));
+        return mqttServer.InjectApplicationMessage(new(message)
+        {
+            SenderClientId = serverId
+        });
     }
 }
