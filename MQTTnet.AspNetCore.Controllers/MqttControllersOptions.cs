@@ -5,9 +5,9 @@ namespace MQTTnet.AspNetCore.Controllers;
 
 public sealed class MqttControllersOptions
 {
-    internal Assembly[] ControllerAssemblies { get; private set; } = null;
-    internal Type AuthenticationController { get; private set; } = null;
-    internal Type ConnectionController { get; private set; } = null;
+    internal Assembly[]? ControllerAssemblies { get; private set; } = null;
+    internal Type? AuthenticationController { get; private set; } = null;
+    internal Type? ConnectionController { get; private set; } = null;
 
     public MqttControllersOptions WithControllers(params Assembly[] assemblies)
     {

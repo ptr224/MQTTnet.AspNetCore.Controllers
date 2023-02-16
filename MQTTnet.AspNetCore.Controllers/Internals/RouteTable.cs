@@ -27,14 +27,14 @@ internal class RouteTable
             throw new InvalidOperationException("Cannot build route table. Two or more routes overlap.");
     }
 
-    private static Route Match(string[] topic, Route[] routes)
+    private static Route? Match(string[] topic, Route[] routes)
     {
         // Trova una Route compatibile con il topic passato
         return routes.Where(r => r.Match(topic)).FirstOrDefault();
     }
 
-    protected readonly Route[] _publishRoutes;
-    protected readonly Route[] _subscribeRoutes;
+    private readonly Route[] _publishRoutes;
+    private readonly Route[] _subscribeRoutes;
 
     public RouteTable(IEnumerable<Type> controllers)
     {
@@ -92,12 +92,12 @@ internal class RouteTable
         _subscribeRoutes = subscribeRoutes.ToArray();
     }
 
-    public Route MatchPublish(string[] topic)
+    public Route? MatchPublish(string[] topic)
     {
         return Match(topic, _publishRoutes);
     }
 
-    public Route MatchSubscribe(string[] topic)
+    public Route? MatchSubscribe(string[] topic)
     {
         return Match(topic, _subscribeRoutes);
     }

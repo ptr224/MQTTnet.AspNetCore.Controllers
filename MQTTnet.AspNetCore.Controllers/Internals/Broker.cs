@@ -13,7 +13,7 @@ internal sealed class Broker : IBroker
     private static async ValueTask ActivateRoute(string[] topic, Route route, object controller)
     {
         var parameters = route.Method.GetParameters();
-        object returnValue;
+        object? returnValue;
 
         if (parameters.Length == 0)
         {
@@ -27,7 +27,7 @@ internal sealed class Broker : IBroker
                 var segment = route.Template[i];
                 if (segment.Type == SegmentType.Parametric)
                 {
-                    var info = segment.ParameterInfo;
+                    var info = segment.ParameterInfo!;
                     paramsArray[info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
                 }
             }
@@ -47,14 +47,14 @@ internal sealed class Broker : IBroker
 
     private readonly ILogger<Broker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly RouteTable _routeTable;
+    private readonly RouteTable? _routeTable;
     private readonly bool hasAuthenticationHandler;
     private readonly bool hasConnectionHandler;
     private readonly string serverId;
 
-    private MqttServer mqttServer;
+    private MqttServer? mqttServer;
 
-    public Broker(ILogger<Broker> logger, IServiceScopeFactory scopeFactory, MqttControllersOptions options, RouteTable routeTable = null)
+    public Broker(ILogger<Broker> logger, IServiceScopeFactory scopeFactory, MqttControllersOptions options, RouteTable? routeTable = null)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
@@ -104,7 +104,7 @@ internal sealed class Broker : IBroker
             // Controlla che il topic abbia un'azione corrispondente
 
             string[] topic = context.ApplicationMessage.Topic.Split('/');
-            var route = _routeTable.MatchPublish(topic);
+            var route = _routeTable!.MatchPublish(topic);
 
             if (route is null)
             {
@@ -121,8 +121,8 @@ internal sealed class Broker : IBroker
                 // Crea scope, preleva controller, assegna contesto ed attiva route
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
-                (controller as MqttControllerBase).ControllerContext = new()
+                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!);
+                (controller as MqttControllerBase)!.ControllerContext = new()
                 {
                     PublishEventArgs = context
                 };
@@ -156,7 +156,7 @@ internal sealed class Broker : IBroker
             // Controlla che il topic abbia un'azione corrispondente
 
             string[] topic = context.TopicFilter.Topic.Split('/');
-            var route = _routeTable.MatchSubscribe(topic);
+            var route = _routeTable!.MatchSubscribe(topic);
 
             if (route is null)
             {
@@ -173,8 +173,8 @@ internal sealed class Broker : IBroker
                 // Crea scope, preleva controller, assegna contesto ed attiva route
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
-                (controller as MqttControllerBase).ControllerContext = new()
+                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!);
+                (controller as MqttControllerBase)!.ControllerContext = new()
                 {
                     SubscriptionEventArgs = context
                 };
@@ -256,7 +256,7 @@ internal sealed class Broker : IBroker
 
     public Task Send(MqttApplicationMessage message)
     {
-        return mqttServer.InjectApplicationMessage(new(message)
+        return mqttServer!.InjectApplicationMessage(new(message)
         {
             SenderClientId = serverId
         });

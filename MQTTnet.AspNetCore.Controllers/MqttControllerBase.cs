@@ -5,7 +5,7 @@ namespace MQTTnet.AspNetCore.Controllers;
 
 public abstract class MqttControllerBase
 {
-    private ControllerContext controllerContext;
+    private ControllerContext? controllerContext;
     public ControllerContext ControllerContext
     {
         get
@@ -20,6 +20,6 @@ public abstract class MqttControllerBase
         }
     }
 
-    public InterceptingPublishEventArgs PublishContext => ControllerContext.PublishEventArgs;
-    public InterceptingSubscriptionEventArgs SubscriptionContext => ControllerContext.SubscriptionEventArgs;
+    public InterceptingPublishEventArgs? PublishContext => ControllerContext.PublishEventArgs;
+    public InterceptingSubscriptionEventArgs? SubscriptionContext => ControllerContext.SubscriptionEventArgs;
 }

@@ -4,10 +4,15 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class RouteComparer : IEqualityComparer<Route>
+internal class RouteComparer : EqualityComparer<Route>
 {
-    public bool Equals(Route x, Route y)
+    public override bool Equals(Route? x, Route? y)
     {
+        if (x is null && y is null)
+            return true;
+        else if (x is null || y is null)
+            return false;
+
         int count = Math.Min(x.Template.Length, y.Template.Length);
 
         for (int i = 0; i < count; i++)
@@ -28,7 +33,7 @@ internal class RouteComparer : IEqualityComparer<Route>
         return x.Template.Length == y.Template.Length;
     }
 
-    public int GetHashCode([DisallowNull] Route obj)
+    public override int GetHashCode([DisallowNull] Route obj)
     {
         return 0;
     }

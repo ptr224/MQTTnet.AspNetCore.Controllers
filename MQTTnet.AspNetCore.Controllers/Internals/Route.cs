@@ -12,7 +12,7 @@ internal enum SegmentType
     MultiLevelWildcard
 }
 
-internal record struct TemplateSegment(string Segment, SegmentType Type, ParameterInfo ParameterInfo);
+internal record struct TemplateSegment(string Segment, SegmentType Type, ParameterInfo? ParameterInfo);
 
 internal sealed class Route
 {
@@ -27,7 +27,7 @@ internal sealed class Route
             .Select(s => s switch
             {
                 "" => throw new InvalidOperationException($"Invalid template '{template}'. Empty segments are not allowed."),
-                "[controller]" => action.DeclaringType.Name.EndsWith("Controller") ? action.DeclaringType.Name[0..^10] : action.DeclaringType.Name,
+                "[controller]" => action.DeclaringType!.Name.EndsWith("Controller") ? action.DeclaringType.Name[0..^10] : action.DeclaringType.Name,
                 "[action]" => action.Name,
                 _ => s
             })
@@ -43,7 +43,7 @@ internal sealed class Route
                     _ => (SegmentType.Normal, s)
                 };
 
-                ParameterInfo parameterInfo = null;
+                ParameterInfo? parameterInfo = null;
 
                 if (type == SegmentType.Parametric)
                 {
