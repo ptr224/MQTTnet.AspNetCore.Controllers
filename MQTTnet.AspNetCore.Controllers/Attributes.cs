@@ -33,5 +33,5 @@ public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter
 {
     public int Order { get; set; }
 
-    public abstract ValueTask InvokeAsync(ControllerContext context, MqttActionFilterDelegate next);
+    public abstract ValueTask InvokeAsync(MqttContext context, MqttActionFilterDelegate next);
 }

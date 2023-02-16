@@ -5,21 +5,21 @@ namespace MQTTnet.AspNetCore.Controllers;
 
 public abstract class MqttControllerBase
 {
-    private ControllerContext? controllerContext;
-    public ControllerContext ControllerContext
+    private MqttContext? mqttContext;
+    public MqttContext MqttContext
     {
         get
         {
-            controllerContext ??= new ControllerContext();
-            return controllerContext;
+            mqttContext ??= new MqttContext();
+            return mqttContext;
         }
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            controllerContext = value;
+            mqttContext = value;
         }
     }
 
-    public InterceptingPublishEventArgs PublishContext => ControllerContext.PublishEventArgs ?? throw new InvalidOperationException("Not a publish event");
-    public InterceptingSubscriptionEventArgs SubscriptionContext => ControllerContext.SubscriptionEventArgs ?? throw new InvalidOperationException("Not a subscription event");
+    public InterceptingPublishEventArgs PublishContext => MqttContext.PublishEventArgs ?? throw new InvalidOperationException("Not a publish event");
+    public InterceptingSubscriptionEventArgs SubscriptionContext => MqttContext.SubscriptionEventArgs ?? throw new InvalidOperationException("Not a subscription event");
 }

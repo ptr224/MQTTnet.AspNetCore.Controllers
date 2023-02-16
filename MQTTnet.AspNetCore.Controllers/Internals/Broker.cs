@@ -100,7 +100,7 @@ internal sealed class Broker : IBroker
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 var controller = (scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!) as MqttControllerBase)!;
-                controller.ControllerContext = new()
+                controller.MqttContext = new()
                 {
                     PublishEventArgs = context
                 };
@@ -165,7 +165,7 @@ internal sealed class Broker : IBroker
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 var controller = (scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!) as MqttControllerBase)!;
-                controller.ControllerContext = new()
+                controller.MqttContext = new()
                 {
                     SubscriptionEventArgs = context
                 };

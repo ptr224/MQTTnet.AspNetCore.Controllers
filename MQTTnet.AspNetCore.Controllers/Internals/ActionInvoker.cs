@@ -7,13 +7,13 @@ internal class ActionInvoker
 {
     private readonly string[] _topic;
     private readonly Route _route;
-    private readonly MqttControllerBase _controller;
+    private readonly ActionContext _context;
 
     public ActionInvoker(string[] topic, Route route, MqttControllerBase controller)
     {
         _topic = topic;
         _route = route;
-        _controller = controller;
+        _context = new(controller);
     }
 
     private static object?[]? GetParams(string[] topic, Route route)
@@ -46,12 +46,12 @@ internal class ActionInvoker
     {
         if (step < _route.ActionFilters.Length)
         {
-            await _route.ActionFilters[step].InvokeAsync(_controller.ControllerContext, () => Execute(step + 1));
+            await _route.ActionFilters[step].InvokeAsync(_context.MqttContext, () => Execute(step + 1));
         }
         else
         {
             var parameters = GetParams(_topic, _route);
-            var returnValue = _route.Method.Invoke(_controller, parameters);
+            var returnValue = _route.Method.Invoke(_context.Controller, parameters);
 
             if (returnValue is Task task)
             {

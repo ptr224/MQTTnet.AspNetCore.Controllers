@@ -29,5 +29,7 @@ public delegate ValueTask MqttActionFilterDelegate();
 
 public interface IMqttActionFilter
 {
-    ValueTask InvokeAsync(ControllerContext context, MqttActionFilterDelegate next);
+    int Order { get; }
+
+    ValueTask InvokeAsync(MqttContext context, MqttActionFilterDelegate next);
 }
