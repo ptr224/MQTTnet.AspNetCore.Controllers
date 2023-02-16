@@ -1,33 +1,26 @@
 ﻿using MQTTnet;
 using MQTTnet.AspNetCore.Controllers;
-using MQTTnet.Server;
-using System.Diagnostics.CodeAnalysis;
+using MqttTest.Services;
 
 namespace MqttTest.MqttControllers;
 
 public class MqttController : MqttControllerBase
 {
     private readonly ILogger<MqttController> _logger;
-    private readonly IBroker _broker;
+    private readonly MqttService _service;
 
-    public MqttController(ILogger<MqttController> logger, IBroker broker)
+    public MqttController(ILogger<MqttController> logger, MqttService service)
     {
         _logger = logger;
-        _broker = broker;
+        _service = service;
     }
 
     [MqttPublish("+/+/#")]
-    public Task Answer()
+    public ValueTask Answer()
     {
         PublishContext.ProcessPublish = true;
         _logger.LogInformation("Message from {clientId} : {payload}", PublishContext.ClientId, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        return _broker.Send(new MqttApplicationMessageBuilder()
-            .WithTopic($"{PublishContext.ApplicationMessage.Topic}/ans")
-            .WithPayload(PublishContext.ApplicationMessage.Payload)
-            .WithQualityOfServiceLevel(PublishContext.ApplicationMessage.QualityOfServiceLevel)
-            .WithRetainFlag(PublishContext.ApplicationMessage.Retain)
-            .Build()
-        );
+        return _service.Answer();
     }
 
     [MqttPublish("{serial}/kickout")]
@@ -52,10 +45,11 @@ public class MqttController : MqttControllerBase
     }
 
     [MqttSubscribe("+")]
-    public void Root()
+    public ValueTask Root()
     {
         SubscriptionContext.ProcessSubscription = true;
         _logger.LogInformation("Accept subscription to {topic}", SubscriptionContext.TopicFilter.Topic);
+        return _service.Answer();
     }
 
     [MqttSubscribe("+/si/#")]

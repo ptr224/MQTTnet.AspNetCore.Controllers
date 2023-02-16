@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -25,9 +26,12 @@ builder.Services
             .WithAuthenticationController<MqttAuthenticationController>()
             .WithConnectionController<MqttConnectionController>();
     })
+    .AddMqttContextAccessor()
     .AddMqttTcpServerAdapter()
     .AddMqttWebSocketServerAdapter()
     .AddConnections();
+
+builder.Services.AddScoped<MqttService>();
 
 var app = builder.Build();
 

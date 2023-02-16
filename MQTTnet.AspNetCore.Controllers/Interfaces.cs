@@ -18,3 +18,9 @@ public interface IMqttConnectionController
     Task ClientConnectedAsync(ClientConnectedEventArgs context);
     Task ClientDisconnectedAsync(ClientDisconnectedEventArgs context);
 }
+
+public interface IMqttContextAccessor
+{
+    public InterceptingPublishEventArgs? PublishContext { get; set; }
+    public InterceptingSubscriptionEventArgs? SubscriptionContext { get; set; }
+}
