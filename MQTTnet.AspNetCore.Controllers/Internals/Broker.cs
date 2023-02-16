@@ -113,14 +113,19 @@ internal sealed class Broker : IBroker
             }
             else
             {
-                // Crea scope, preleva controller, imposta contesto con valori di default ed attiva route
-
-                await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+                // Imposta contesto con valori di default
 
                 context.CloseConnection = false;
                 context.ProcessPublish = true;
-                (controller as MqttControllerBase).PublishContext = context;
+
+                // Crea scope, preleva controller, assegna contesto ed attiva route
+
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+                (controller as MqttControllerBase).ControllerContext = new()
+                {
+                    PublishEventArgs = context
+                };
 
                 await ActivateRoute(topic, route, controller);
             }
@@ -160,14 +165,19 @@ internal sealed class Broker : IBroker
             }
             else
             {
-                // Crea scope, preleva controller, imposta contesto con valori di default ed attiva route
-
-                await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+                // Imposta contesto con valori di default
 
                 context.CloseConnection = false;
                 context.ProcessSubscription = true;
-                (controller as MqttControllerBase).SubscriptionContext = context;
+
+                // Crea scope, preleva controller, assegna contesto ed attiva route
+
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType);
+                (controller as MqttControllerBase).ControllerContext = new()
+                {
+                    SubscriptionEventArgs = context
+                };
 
                 await ActivateRoute(topic, route, controller);
             }
