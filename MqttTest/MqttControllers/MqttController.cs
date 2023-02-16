@@ -1,5 +1,7 @@
 ﻿using MQTTnet;
 using MQTTnet.AspNetCore.Controllers;
+using MQTTnet.Server;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MqttTest.MqttControllers;
 
@@ -15,17 +17,17 @@ public class MqttController : MqttControllerBase
     }
 
     [MqttPublish("+/+/#")]
-    public async Task Answer()
+    public Task Answer()
     {
         PublishContext.ProcessPublish = true;
         _logger.LogInformation("Message from {clientId} : {payload}", PublishContext.ClientId, PublishContext.ApplicationMessage.ConvertPayloadToString());
-        await _broker.Send(new MqttApplicationMessageBuilder()
-                .WithTopic($"{PublishContext.ApplicationMessage.Topic}/ans")
-                .WithPayload(PublishContext.ApplicationMessage.Payload)
-                .WithQualityOfServiceLevel(PublishContext.ApplicationMessage.QualityOfServiceLevel)
-                .WithRetainFlag(PublishContext.ApplicationMessage.Retain)
-                .Build()
-                );
+        return _broker.Send(new MqttApplicationMessageBuilder()
+            .WithTopic($"{PublishContext.ApplicationMessage.Topic}/ans")
+            .WithPayload(PublishContext.ApplicationMessage.Payload)
+            .WithQualityOfServiceLevel(PublishContext.ApplicationMessage.QualityOfServiceLevel)
+            .WithRetainFlag(PublishContext.ApplicationMessage.Retain)
+            .Build()
+        );
     }
 
     [MqttPublish("{serial}/kickout")]

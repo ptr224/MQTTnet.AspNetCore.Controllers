@@ -20,6 +20,6 @@ public abstract class MqttControllerBase
         }
     }
 
-    public InterceptingPublishEventArgs? PublishContext => ControllerContext.PublishEventArgs;
-    public InterceptingSubscriptionEventArgs? SubscriptionContext => ControllerContext.SubscriptionEventArgs;
+    public InterceptingPublishEventArgs PublishContext => ControllerContext.PublishEventArgs ?? throw new InvalidOperationException("Not a publish event");
+    public InterceptingSubscriptionEventArgs SubscriptionContext => ControllerContext.SubscriptionEventArgs ?? throw new InvalidOperationException("Not a subscription event");
 }
