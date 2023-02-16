@@ -12,24 +12,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services
-    .AddMqttServer(options =>
-    {
-        options
-            .WithConnectionBacklog(1000)
-            .WithDefaultEndpoint()
-            .WithDefaultEndpointPort(1883);
-    })
-    .AddMqttControllers(options =>
-    {
-        options
-            .WithControllers(AppDomain.CurrentDomain.GetAssemblies())
-            .WithAuthenticationController<MqttAuthenticationController>()
-            .WithConnectionController<MqttConnectionController>();
-    })
-    .AddMqttContextAccessor()
+    .AddMqttServer(options => options
+        .WithConnectionBacklog(1000)
+        .WithDefaultEndpoint()
+        .WithDefaultEndpointPort(1883)
+    )
     .AddMqttTcpServerAdapter()
     .AddMqttWebSocketServerAdapter()
     .AddConnections();
+
+builder.Services
+    .AddMqttControllers(AppDomain.CurrentDomain.GetAssemblies())
+    .AddMqttContextAccessor()
+    .AddMqttAuthenticationController<MqttAuthenticationController>()
+    .AddMqttConnectionController<MqttConnectionController>();
 
 builder.Services.AddScoped<MqttService>();
 

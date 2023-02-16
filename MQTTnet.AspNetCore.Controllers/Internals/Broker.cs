@@ -47,23 +47,29 @@ internal sealed class Broker : IBroker
 
     private readonly ILogger<Broker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly RouteTable? _routeTable;
-    private readonly IMqttContextAccessor? _mqttContextAccessor;
-    private readonly bool hasAuthenticationHandler;
-    private readonly bool hasConnectionHandler;
+    private readonly RouteTable _routeTable;
+    private readonly IMqttContextAccessor? mqttContextAccessor;
+    private readonly bool hasAuthenticationController;
+    private readonly bool hasConnectionController;
     private readonly string serverId;
 
     private MqttServer? mqttServer;
 
-    public Broker(ILogger<Broker> logger, IServiceScopeFactory scopeFactory, MqttControllersOptions options, RouteTable? routeTable = null, IMqttContextAccessor? mqttContextAccessor = null)
+    public Broker(
+        ILogger<Broker> logger,
+        IServiceScopeFactory scopeFactory,
+        RouteTable routeTable,
+        IServiceProvider serviceProvider,
+        IServiceProviderIsService isService
+    )
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
         _routeTable = routeTable;
-        _mqttContextAccessor = mqttContextAccessor;
 
-        hasAuthenticationHandler = options.AuthenticationController is not null;
-        hasConnectionHandler = options.ConnectionController is not null;
+        mqttContextAccessor = serviceProvider.GetService<IMqttContextAccessor>();
+        hasAuthenticationController = isService.IsService(typeof(IMqttAuthenticationController));
+        hasConnectionController = isService.IsService(typeof(IMqttConnectionController));
         serverId = Guid.NewGuid().ToString("N");
     }
 
@@ -100,8 +106,8 @@ internal sealed class Broker : IBroker
         {
             // Setta contesto
 
-            if (_mqttContextAccessor is not null)
-                _mqttContextAccessor.PublishContext = context;
+            if (mqttContextAccessor is not null)
+                mqttContextAccessor.PublishContext = context;
 
             // Ignora i messaggi del server
 
@@ -111,7 +117,7 @@ internal sealed class Broker : IBroker
             // Controlla che il topic abbia un'azione corrispondente
 
             string[] topic = context.ApplicationMessage.Topic.Split('/');
-            var route = _routeTable!.MatchPublish(topic);
+            var route = _routeTable.MatchPublish(topic);
 
             if (route is null)
             {
@@ -153,8 +159,8 @@ internal sealed class Broker : IBroker
         {
             // Resetta contesto
 
-            if (_mqttContextAccessor is not null)
-                _mqttContextAccessor.PublishContext = null;
+            if (mqttContextAccessor is not null)
+                mqttContextAccessor.PublishContext = null;
         }
     }
 
@@ -164,8 +170,8 @@ internal sealed class Broker : IBroker
         {
             // Setta contesto
 
-            if (_mqttContextAccessor is not null)
-                _mqttContextAccessor.SubscriptionContext = context;
+            if (mqttContextAccessor is not null)
+                mqttContextAccessor.SubscriptionContext = context;
 
             // Ignora i messaggi del server
 
@@ -175,7 +181,7 @@ internal sealed class Broker : IBroker
             // Controlla che il topic abbia un'azione corrispondente
 
             string[] topic = context.TopicFilter.Topic.Split('/');
-            var route = _routeTable!.MatchSubscribe(topic);
+            var route = _routeTable.MatchSubscribe(topic);
 
             if (route is null)
             {
@@ -217,8 +223,8 @@ internal sealed class Broker : IBroker
         {
             // Resetta contesto
 
-            if (_mqttContextAccessor is not null)
-                _mqttContextAccessor.SubscriptionContext = null;
+            if (mqttContextAccessor is not null)
+                mqttContextAccessor.SubscriptionContext = null;
         }
     }
 
@@ -256,24 +262,21 @@ internal sealed class Broker : IBroker
     {
         mqttServer = server;
 
+        // Attiva handler pubblicazioni e sottoscrizioni
+
+        server.InterceptingPublishAsync += InterceptingPublishAsync;
+        server.InterceptingSubscriptionAsync += InterceptingSubscriptionAsync;
+
         // Attiva handler autenticazione se necessario
 
-        if (hasAuthenticationHandler)
+        if (hasAuthenticationController)
         {
             server.ValidatingConnectionAsync += ValidatingConnectionAsync;
         }
 
-        // Attiva handler pubblicazioni e sottoscrizioni se necessario
-
-        if (_routeTable is not null)
-        {
-            server.InterceptingPublishAsync += InterceptingPublishAsync;
-            server.InterceptingSubscriptionAsync += InterceptingSubscriptionAsync;
-        }
-
         // Attiva handler connessioni se necessario
 
-        if (hasConnectionHandler)
+        if (hasConnectionController)
         {
             server.ClientConnectedAsync += ClientConnectedAsync;
             server.ClientDisconnectedAsync += ClientDisconnectedAsync;
