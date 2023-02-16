@@ -4,7 +4,21 @@ using MqttTest.Services;
 
 namespace MqttTest.MqttControllers;
 
-public class MqttController : MqttControllerBase
+internal class ActionFilter1 : MqttActionFilterAttribute { }
+internal class ActionFilter2 : MqttActionFilterAttribute { }
+internal class ActionFilter3 : MqttActionFilterAttribute { }
+internal class ActionFilter4 : MqttActionFilterAttribute { }
+
+[ActionFilter4(Order = 1)]
+public abstract class MqttControllerDefault : MqttControllerBase
+{
+    [ActionFilter2(Order = 1)]
+    [MqttPublish("+/we")]
+    public virtual void Test() { }
+}
+
+[ActionFilter3]
+public class MqttController : MqttControllerDefault
 {
     private readonly ILogger<MqttController> _logger;
     private readonly MqttService _service;
@@ -13,6 +27,13 @@ public class MqttController : MqttControllerBase
     {
         _logger = logger;
         _service = service;
+    }
+
+    [ActionFilter1]
+    [MqttPublish("+/dai")]
+    public override void Test()
+    {
+        base.Test();
     }
 
     [MqttPublish("+/+/#")]

@@ -45,13 +45,23 @@ internal class RouteTable
 
         foreach (var controller in controllers)
         {
-            var routeAttribute = controller.GetCustomAttribute<MqttRouteAttribute>(false);
+            var routeAttribute = controller.GetCustomAttribute<MqttRouteAttribute>(true);
+            var controllerFilters = controller.GetCustomAttributes<MqttActionFilterAttribute>(true);
 
-            foreach (var method in controller.GetMethods(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public))
+            foreach (var method in controller.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                // Crea coda filtri
+                // Prima i filtri del controller base, poi del controller derivato, poi dell'azione base, poi dell'azione derivata
+                // Infine riordina secondo i parametri utente
+
+                var actionFilters = method.GetCustomAttributes<MqttActionFilterAttribute>(true)
+                    .Concat(controllerFilters)
+                    .Reverse()
+                    .OrderBy(f => f.Order);
+
                 // Verifica che il metodo abbia un template
 
-                var publishAttribute = method.GetCustomAttribute<MqttPublishAttribute>(false);
+                var publishAttribute = method.GetCustomAttribute<MqttPublishAttribute>(true);
                 if (publishAttribute is not null)
                 {
                     ThrowIfInvalidReturnType(method);
@@ -62,11 +72,11 @@ internal class RouteTable
                         ? publishAttribute.Template
                         : string.Join('/', routeAttribute.Template, publishAttribute.Template);
 
-                    publishRoutes.Add(new(method, template));
+                    publishRoutes.Add(new(method, template, actionFilters));
                     continue;
                 }
 
-                var subscribeAttribute = method.GetCustomAttribute<MqttSubscribeAttribute>(false);
+                var subscribeAttribute = method.GetCustomAttribute<MqttSubscribeAttribute>(true);
                 if (subscribeAttribute is not null)
                 {
                     ThrowIfInvalidReturnType(method);
@@ -77,7 +87,7 @@ internal class RouteTable
                         ? subscribeAttribute.Template
                         : string.Join('/', routeAttribute.Template, subscribeAttribute.Template);
 
-                    subscribeRoutes.Add(new(method, template));
+                    subscribeRoutes.Add(new(method, template, actionFilters));
                     continue;
                 }
             }

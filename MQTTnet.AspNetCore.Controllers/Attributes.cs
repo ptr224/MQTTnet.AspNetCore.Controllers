@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
@@ -9,7 +10,9 @@ public class MqttRouteAttribute : Attribute
 
     public MqttRouteAttribute(string template)
     {
-        Template = template ?? throw new ArgumentNullException(nameof(template));
+        ArgumentNullException.ThrowIfNull(template);
+
+        Template = template.Trim('/');
     }
 }
 
@@ -25,4 +28,23 @@ public sealed class MqttSubscribeAttribute : MqttRouteAttribute
 {
     public MqttSubscribeAttribute(string template) : base(template)
     { }
+}
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+public abstract class MqttActionFilterAttribute : Attribute
+{
+    public int Order { get; set; }
+
+    public virtual void OnActionExecuting(ControllerContext context)
+    { }
+
+    public virtual void OnActionExecuted(ControllerContext context)
+    { }
+
+    public virtual async Task OnActionExecutionAsync(ControllerContext context, Task next)
+    {
+        OnActionExecuting(context);
+        await next;
+        OnActionExecuted(context);
+    }
 }

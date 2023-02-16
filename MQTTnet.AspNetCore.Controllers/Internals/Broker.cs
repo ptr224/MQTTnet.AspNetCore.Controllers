@@ -10,30 +10,36 @@ namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal sealed class Broker : IBroker
 {
-    private static async ValueTask ActivateRoute(string[] topic, Route route, object controller)
+    private static object?[]? GetParams(string[] topic, Route route)
     {
-        var parameters = route.Method.GetParameters();
-        object? returnValue;
+        var paramsCount = route.Method.GetParameters().Length;
 
-        if (parameters.Length == 0)
+        if (paramsCount == 0)
         {
-            returnValue = route.Method.Invoke(controller, null);
+            return null;
         }
         else
         {
-            var paramsArray = new object[parameters.Length];
+            var parameters = new object?[paramsCount];
+
             for (int i = 0; i < route.Template.Length; i++)
             {
                 var segment = route.Template[i];
                 if (segment.Type == SegmentType.Parametric)
                 {
                     var info = segment.ParameterInfo!;
-                    paramsArray[info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
+                    parameters[info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
                 }
             }
 
-            returnValue = route.Method.Invoke(controller, paramsArray);
+            return parameters;
         }
+    }
+
+    private static async ValueTask ActivateRoute(string[] topic, Route route, MqttControllerBase controller)
+    {
+        var parameters = GetParams(topic, route);
+        var returnValue = route.Method.Invoke(controller, parameters);
 
         if (returnValue is Task task)
         {
@@ -134,8 +140,8 @@ internal sealed class Broker : IBroker
                 // Crea scope, preleva controller, assegna contesto ed attiva route
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!);
-                (controller as MqttControllerBase)!.ControllerContext = new()
+                var controller = (scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!) as MqttControllerBase)!;
+                controller.ControllerContext = new()
                 {
                     PublishEventArgs = context
                 };
@@ -198,8 +204,8 @@ internal sealed class Broker : IBroker
                 // Crea scope, preleva controller, assegna contesto ed attiva route
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!);
-                (controller as MqttControllerBase)!.ControllerContext = new()
+                var controller = (scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!) as MqttControllerBase)!;
+                controller.ControllerContext = new()
                 {
                     SubscriptionEventArgs = context
                 };
