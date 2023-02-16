@@ -10,8 +10,6 @@ public class MqttRouteAttribute : Attribute
 
     public MqttRouteAttribute(string template)
     {
-        ArgumentNullException.ThrowIfNull(template);
-
         Template = template.Trim('/');
     }
 }
@@ -31,11 +29,9 @@ public sealed class MqttSubscribeAttribute : MqttRouteAttribute
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-public abstract class MqttActionFilterAttribute : Attribute
+public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter
 {
-    public delegate ValueTask ActionDelegate();
-
     public int Order { get; set; }
 
-    public abstract ValueTask InvokeAsync(ControllerContext context, ActionDelegate next);
+    public abstract ValueTask InvokeAsync(ControllerContext context, MqttActionFilterDelegate next);
 }

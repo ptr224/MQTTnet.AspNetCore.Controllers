@@ -21,6 +21,13 @@ public interface IMqttConnectionController
 
 public interface IMqttContextAccessor
 {
-    public InterceptingPublishEventArgs? PublishContext { get; set; }
-    public InterceptingSubscriptionEventArgs? SubscriptionContext { get; set; }
+    InterceptingPublishEventArgs? PublishContext { get; set; }
+    InterceptingSubscriptionEventArgs? SubscriptionContext { get; set; }
+}
+
+public delegate ValueTask MqttActionFilterDelegate();
+
+public interface IMqttActionFilter
+{
+    ValueTask InvokeAsync(ControllerContext context, MqttActionFilterDelegate next);
 }
