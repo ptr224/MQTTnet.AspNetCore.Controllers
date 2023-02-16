@@ -1,0 +1,71 @@
+﻿using System;
+using System.Threading.Tasks;
+
+namespace MQTTnet.AspNetCore.Controllers.Internals;
+
+internal class ActionInvoker
+{
+    private readonly string[] _topic;
+    private readonly Route _route;
+    private readonly MqttControllerBase _controller;
+
+    public ActionInvoker(string[] topic, Route route, MqttControllerBase controller)
+    {
+        _topic = topic;
+        _route = route;
+        _controller = controller;
+    }
+
+    private static object?[]? GetParams(string[] topic, Route route)
+    {
+        var paramsCount = route.Method.GetParameters().Length;
+
+        if (paramsCount == 0)
+        {
+            return null;
+        }
+        else
+        {
+            var parameters = new object?[paramsCount];
+
+            for (int i = 0; i < route.Template.Length; i++)
+            {
+                var segment = route.Template[i];
+                if (segment.Type == SegmentType.Parametric)
+                {
+                    var info = segment.ParameterInfo!;
+                    parameters[info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
+                }
+            }
+
+            return parameters;
+        }
+    }
+
+    private async ValueTask Execute(int step)
+    {
+        if (step < _route.ActionFilters.Length)
+        {
+            await _route.ActionFilters[step].InvokeAsync(_controller.ControllerContext, () => Execute(step + 1));
+        }
+        else
+        {
+            var parameters = GetParams(_topic, _route);
+            var returnValue = _route.Method.Invoke(_controller, parameters);
+
+            if (returnValue is Task task)
+            {
+                await task;
+            }
+            else if (returnValue is ValueTask valueTask)
+            {
+                await valueTask;
+            }
+        }
+    }
+
+    public ValueTask Execute()
+    {
+        return Execute(0);
+    }
+}

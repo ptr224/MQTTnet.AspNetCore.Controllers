@@ -4,10 +4,46 @@ using MqttTest.Services;
 
 namespace MqttTest.MqttControllers;
 
-internal class ActionFilter1 : MqttActionFilterAttribute { }
-internal class ActionFilter2 : MqttActionFilterAttribute { }
-internal class ActionFilter3 : MqttActionFilterAttribute { }
-internal class ActionFilter4 : MqttActionFilterAttribute { }
+internal abstract class ActionFilterAttribute : MqttActionFilterAttribute
+{
+    private readonly int _value;
+
+    public ActionFilterAttribute(int value)
+    {
+        _value = value;
+    }
+
+    public override async ValueTask InvokeAsync(ControllerContext context, ActionDelegate next)
+    {
+        System.Diagnostics.Debug.WriteLine("Filter {0} begin", _value);
+        await next();
+        System.Diagnostics.Debug.WriteLine("Filter {0} end", _value);
+    }
+}
+
+internal class ActionFilter1Attribute : ActionFilterAttribute
+{
+    public ActionFilter1Attribute() : base(1)
+    { }
+}
+
+internal class ActionFilter2Attribute : ActionFilterAttribute
+{
+    public ActionFilter2Attribute() : base(2)
+    { }
+}
+
+internal class ActionFilter3Attribute : ActionFilterAttribute
+{
+    public ActionFilter3Attribute() : base(3)
+    { }
+}
+
+internal class ActionFilter4Attribute : ActionFilterAttribute
+{
+    public ActionFilter4Attribute() : base(4)
+    { }
+}
 
 [ActionFilter4(Order = 1)]
 public abstract class MqttControllerDefault : MqttControllerBase

@@ -10,47 +10,6 @@ namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal sealed class Broker : IBroker
 {
-    private static object?[]? GetParams(string[] topic, Route route)
-    {
-        var paramsCount = route.Method.GetParameters().Length;
-
-        if (paramsCount == 0)
-        {
-            return null;
-        }
-        else
-        {
-            var parameters = new object?[paramsCount];
-
-            for (int i = 0; i < route.Template.Length; i++)
-            {
-                var segment = route.Template[i];
-                if (segment.Type == SegmentType.Parametric)
-                {
-                    var info = segment.ParameterInfo!;
-                    parameters[info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
-                }
-            }
-
-            return parameters;
-        }
-    }
-
-    private static async ValueTask ActivateRoute(string[] topic, Route route, MqttControllerBase controller)
-    {
-        var parameters = GetParams(topic, route);
-        var returnValue = route.Method.Invoke(controller, parameters);
-
-        if (returnValue is Task task)
-        {
-            await task;
-        }
-        else if (returnValue is ValueTask valueTask)
-        {
-            await valueTask;
-        }
-    }
-
     private readonly ILogger<Broker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly RouteTable _routeTable;
@@ -146,7 +105,8 @@ internal sealed class Broker : IBroker
                     PublishEventArgs = context
                 };
 
-                await ActivateRoute(topic, route, controller);
+                var invoker = new ActionInvoker(topic, route, controller);
+                await invoker.Execute();
             }
         }
         catch (TargetInvocationException e)
@@ -210,7 +170,8 @@ internal sealed class Broker : IBroker
                     SubscriptionEventArgs = context
                 };
 
-                await ActivateRoute(topic, route, controller);
+                var invoker = new ActionInvoker(topic, route, controller);
+                await invoker.Execute();
             }
         }
         catch (TargetInvocationException e)
