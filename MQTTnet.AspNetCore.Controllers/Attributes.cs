@@ -10,6 +10,8 @@ public class MqttRouteAttribute : Attribute
 
     public MqttRouteAttribute(string template)
     {
+        ArgumentNullException.ThrowIfNull(template);
+
         Template = template.Trim('/');
     }
 }

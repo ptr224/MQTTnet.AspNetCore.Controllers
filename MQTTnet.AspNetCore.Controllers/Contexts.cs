@@ -20,6 +20,10 @@ public class ActionContext
 
     public ActionContext(MqttControllerBase controller, IServiceProvider serviceProvider, IDictionary<string, string> parameters)
     {
+        ArgumentNullException.ThrowIfNull(controller);
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(parameters);
+
         Controller = controller;
         Services = serviceProvider;
         Parameters = parameters;

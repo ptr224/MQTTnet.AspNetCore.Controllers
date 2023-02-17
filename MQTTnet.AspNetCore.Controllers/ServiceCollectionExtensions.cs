@@ -12,6 +12,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMqttControllers(this IServiceCollection services, params Assembly[] assemblies)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(assemblies);
+
         // Trova e aggiungi tutti i controller
 
         var controllers = assemblies
@@ -33,12 +36,17 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddMqttContextAccessor(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         services.TryAddSingleton<IMqttContextAccessor, MqttContextAccessor>();
         return services;
     }
 
     public static IServiceCollection AddMqttAuthenticationController(this IServiceCollection services, Type type)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(type);
+
         if (!type.IsAssignableTo(typeof(IMqttAuthenticationController)))
             throw new ArgumentException($"Type must implement {nameof(IMqttAuthenticationController)}", nameof(type));
 
@@ -53,6 +61,9 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddMqttConnectionController(this IServiceCollection services, Type type)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(type);
+
         if (!type.IsAssignableTo(typeof(IMqttConnectionController)))
             throw new ArgumentException($"Type must implement {nameof(IMqttConnectionController)}", nameof(type));
 
@@ -67,6 +78,8 @@ public static class ServiceCollectionExtensions
 
     public static IApplicationBuilder UseMqttControllers(this IApplicationBuilder app)
     {
+        ArgumentNullException.ThrowIfNull(app);
+
         app.UseMqttServer(server =>
         {
             var broker = app.ApplicationServices.GetRequiredService<Broker>();
