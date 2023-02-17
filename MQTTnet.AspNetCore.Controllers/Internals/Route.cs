@@ -13,19 +13,20 @@ internal enum SegmentType
     MultiLevelWildcard
 }
 
-internal record struct TemplateSegment(string Segment, SegmentType Type, ParameterInfo? ParameterInfo);
+internal record struct TemplateSegment(string Segment, SegmentType Type);
 
 internal sealed class Route
 {
-    public TemplateSegment[] Template { get; }
     public MethodInfo Method { get; }
+    public TemplateSegment[] Template { get; }
     public MqttActionFilterAttribute[] ActionFilters { get; }
 
     public Route(MethodInfo action, string template, IEnumerable<MqttActionFilterAttribute> actionFilters)
     {
         // Analizza i singoli segmenti del template (no lazy loading)
-        var actionParams = action.GetParameters();
-        var segments = template.Split('/')
+
+        var segments = template
+            .Split('/')
             .Select(s => s switch
             {
                 "" => throw new InvalidOperationException($"Invalid template '{template}'. Empty segments are not allowed."),
@@ -45,20 +46,10 @@ internal sealed class Route
                     _ => (SegmentType.Normal, s)
                 };
 
-                ParameterInfo? parameterInfo = null;
+                if (type == SegmentType.Parametric && string.IsNullOrWhiteSpace(segment))
+                    throw new InvalidOperationException($"Invalid template '{template}'. Empty parameter name in segment '{s}' is not allowed.");
 
-                if (type == SegmentType.Parametric)
-                {
-                    if (string.IsNullOrEmpty(segment))
-                        throw new InvalidOperationException($"Invalid template '{template}'. Empty parameter name in segment '{s}' is not allowed.");
-
-                    parameterInfo = actionParams.Where(p => p.Name == segment).FirstOrDefault();
-
-                    if (parameterInfo is null)
-                        throw new InvalidOperationException($"Invalid template '{template}'. The parameter '{s}' is not defined.");
-                }
-
-                return new TemplateSegment(segment, type, parameterInfo);
+                return new TemplateSegment(segment, type);
             })
             .ToList();
 
@@ -70,18 +61,21 @@ internal sealed class Route
 
         // Verifica che i parametri corrispondano a quelli dell'azione
 
-        var templateParams = segments.Where(s => s.Type == SegmentType.Parametric);
+        var actionParams = action
+            .GetParameters()
+            .Select(p => p.Name);
 
-        if (actionParams.Length != templateParams.Count())
-            throw new InvalidOperationException($"Invalid template '{template}'. The number of parameters do not correspond.");
+        var templateParams = segments
+            .Where(s => s.Type == SegmentType.Parametric)
+            .Select(p => p.Segment);
 
-        if (actionParams.Select(p => p.Name).Except(templateParams.Select(p => p.Segment)).Any())
-            throw new InvalidOperationException($"Invalid template '{template}'. The template parameters do not correspond with the action parameters.");
+        if (actionParams.Except(templateParams).Any())
+            throw new InvalidOperationException($"Invalid template '{template}'. Missing action parameters.");
 
         // Inizializza
 
-        Template = segments.ToArray();
         Method = action;
+        Template = segments.ToArray();
         ActionFilters = actionFilters.ToArray();
     }
 

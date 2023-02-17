@@ -14,11 +14,11 @@ public class ActionContext
 {
     public MqttControllerBase Controller { get; }
     public IServiceProvider Services { get; }
-    public IDictionary<string, object?> Parameters { get; }
+    public IDictionary<string, string> Parameters { get; }
 
     public MqttContext MqttContext => Controller.MqttContext;
 
-    public ActionContext(MqttControllerBase controller, IServiceProvider serviceProvider, IDictionary<string, object?> parameters)
+    public ActionContext(MqttControllerBase controller, IServiceProvider serviceProvider, IDictionary<string, string> parameters)
     {
         Controller = controller;
         Services = serviceProvider;

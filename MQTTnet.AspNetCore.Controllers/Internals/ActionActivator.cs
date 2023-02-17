@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
@@ -15,32 +16,36 @@ internal class ActionActivator
     {
         _route = route;
 
-        var actionParams = new Dictionary<string, object?>();
-        var paramsCount = route.Method.GetParameters().Length;
+        // Costruisci dizionario ed array parametri
 
-        if (paramsCount > 0)
+        var actionParams = new Dictionary<string, string>();
+
+        var methodParams = route.Method.GetParameters();
+        if (methodParams.Length > 0)
+            parameters = new object?[methodParams.Length];
+
+        for (int i = 0; i < route.Template.Length; i++)
         {
-            parameters = new object?[paramsCount];
-
-            for (int i = 0; i < route.Template.Length; i++)
+            var segment = route.Template[i];
+            if (segment.Type == SegmentType.Parametric)
             {
-                var segment = route.Template[i];
-                if (segment.Type == SegmentType.Parametric)
-                {
-                    var info = segment.ParameterInfo!;
-                    var value = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
+                actionParams[segment.Segment] = topic[i];
 
-                    parameters[info.Position] = value;
-                    actionParams[info.Name!] = value;
-                }
+                var info = methodParams.Where(p => p.Name == segment.Segment).FirstOrDefault();
+                if (info is not null)
+                    parameters![info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
             }
         }
+
+        // Assegna contesto
 
         _context = new(controller, scope.ServiceProvider, actionParams);
     }
 
     private async ValueTask Activate(int step)
     {
+        // Esegui filtro se presente, altrimenti invoca azione
+
         if (step < _route.ActionFilters.Length)
         {
             await _route.ActionFilters[step].OnActionAsync(_context, () => Activate(step + 1));
