@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
@@ -9,11 +10,11 @@ internal class ActionInvoker
     private readonly Route _route;
     private readonly ActionContext _context;
 
-    public ActionInvoker(string[] topic, Route route, MqttControllerBase controller)
+    public ActionInvoker(string[] topic, Route route, MqttControllerBase controller, IServiceScope scope)
     {
         _topic = topic;
         _route = route;
-        _context = new(controller);
+        _context = new(controller, scope.ServiceProvider);
     }
 
     private static object?[]? GetParams(string[] topic, Route route)
@@ -46,7 +47,7 @@ internal class ActionInvoker
     {
         if (step < _route.ActionFilters.Length)
         {
-            await _route.ActionFilters[step].InvokeAsync(_context.MqttContext, () => Execute(step + 1));
+            await _route.ActionFilters[step].OnActionAsync(_context, () => Execute(step + 1));
         }
         else
         {

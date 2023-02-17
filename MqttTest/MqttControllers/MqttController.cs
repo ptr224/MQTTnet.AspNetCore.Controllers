@@ -13,11 +13,13 @@ internal abstract class ActionFilterAttribute : MqttActionFilterAttribute
         _value = value;
     }
 
-    public override async ValueTask InvokeAsync(MqttContext context, MqttActionFilterDelegate next)
+    public override async ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next)
     {
-        System.Diagnostics.Debug.WriteLine("Filter {0} begin", _value);
+        var logger = context.Services.GetRequiredService<ILogger<ActionFilterAttribute>>();
+
+        logger.LogDebug("Filter {value} begin", _value);
         await next();
-        System.Diagnostics.Debug.WriteLine("Filter {0} end", _value);
+        logger.LogDebug("Filter {value} end", _value);
     }
 }
 

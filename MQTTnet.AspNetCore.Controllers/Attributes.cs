@@ -28,10 +28,12 @@ public sealed class MqttSubscribeAttribute : MqttRouteAttribute
     { }
 }
 
+public delegate ValueTask MqttActionFilterDelegate();
+
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter
+public abstract class MqttActionFilterAttribute : Attribute
 {
     public int Order { get; set; }
 
-    public abstract ValueTask InvokeAsync(MqttContext context, MqttActionFilterDelegate next);
+    public abstract ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next);
 }

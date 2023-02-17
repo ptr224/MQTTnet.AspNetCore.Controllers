@@ -19,9 +19,9 @@ internal sealed class Route
 {
     public TemplateSegment[] Template { get; }
     public MethodInfo Method { get; }
-    public IMqttActionFilter[] ActionFilters { get; }
+    public MqttActionFilterAttribute[] ActionFilters { get; }
 
-    public Route(MethodInfo action, string template, IEnumerable<IMqttActionFilter> actionFilters)
+    public Route(MethodInfo action, string template, IEnumerable<MqttActionFilterAttribute> actionFilters)
     {
         // Analizza i singoli segmenti del template (no lazy loading)
         var actionParams = action.GetParameters();
