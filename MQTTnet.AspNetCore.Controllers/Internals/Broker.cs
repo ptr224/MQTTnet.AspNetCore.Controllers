@@ -105,8 +105,8 @@ internal sealed class Broker : IBroker
                     PublishEventArgs = context
                 };
 
-                var invoker = new ActionInvoker(topic, route, controller, scope);
-                await invoker.Execute();
+                var activator = new ActionActivator(topic, route, controller, scope);
+                await activator.Activate();
             }
         }
         catch (TargetInvocationException e)
@@ -170,8 +170,8 @@ internal sealed class Broker : IBroker
                     SubscriptionEventArgs = context
                 };
 
-                var invoker = new ActionInvoker(topic, route, controller, scope);
-                await invoker.Execute();
+                var activator = new ActionActivator(topic, route, controller, scope);
+                await activator.Activate();
             }
         }
         catch (TargetInvocationException e)

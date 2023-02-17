@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class ActionInvoker
+internal class ActionActivator
 {
     private readonly string[] _topic;
     private readonly Route _route;
     private readonly ActionContext _context;
 
-    public ActionInvoker(string[] topic, Route route, MqttControllerBase controller, IServiceScope scope)
+    public ActionActivator(string[] topic, Route route, MqttControllerBase controller, IServiceScope scope)
     {
         _topic = topic;
         _route = route;
@@ -43,11 +43,11 @@ internal class ActionInvoker
         }
     }
 
-    private async ValueTask Execute(int step)
+    private async ValueTask Activate(int step)
     {
         if (step < _route.ActionFilters.Length)
         {
-            await _route.ActionFilters[step].OnActionAsync(_context, () => Execute(step + 1));
+            await _route.ActionFilters[step].OnActionAsync(_context, () => Activate(step + 1));
         }
         else
         {
@@ -65,8 +65,8 @@ internal class ActionInvoker
         }
     }
 
-    public ValueTask Execute()
+    public ValueTask Activate()
     {
-        return Execute(0);
+        return Activate(0);
     }
 }
