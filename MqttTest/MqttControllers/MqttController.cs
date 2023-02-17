@@ -17,6 +17,11 @@ internal abstract class ActionFilterAttribute : MqttActionFilterAttribute
     {
         var logger = context.Services.GetRequiredService<ILogger<ActionFilterAttribute>>();
 
+        if (context.Parameters.TryGetValue("serial", out var serial) && serial is not null)
+        {
+            logger.LogDebug("Serial = {serial}", serial);
+        }
+
         logger.LogDebug("Filter {value} begin", _value);
         await next();
         logger.LogDebug("Filter {value} end", _value);
@@ -111,8 +116,8 @@ public class MqttController : MqttControllerDefault
         return _service.Answer();
     }
 
-    [MqttSubscribe("+/si/#")]
-    public void Accept()
+    [MqttSubscribe("{serial}/si/#")]
+    public void Accept(string serial)
     {
         SubscriptionContext.ProcessSubscription = true;
         _logger.LogInformation("Accept subscription to {topic}", SubscriptionContext.TopicFilter.Topic);

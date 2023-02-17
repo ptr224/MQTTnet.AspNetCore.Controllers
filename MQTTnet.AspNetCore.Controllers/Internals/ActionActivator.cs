@@ -1,33 +1,26 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal class ActionActivator
 {
-    private readonly string[] _topic;
+    private readonly object?[]? parameters;
     private readonly Route _route;
     private readonly ActionContext _context;
 
     public ActionActivator(string[] topic, Route route, MqttControllerBase controller, IServiceScope scope)
     {
-        _topic = topic;
         _route = route;
-        _context = new(controller, scope.ServiceProvider);
-    }
 
-    private static object?[]? GetParams(string[] topic, Route route)
-    {
+        var actionParams = new Dictionary<string, object?>();
         var paramsCount = route.Method.GetParameters().Length;
 
-        if (paramsCount == 0)
+        if (paramsCount > 0)
         {
-            return null;
-        }
-        else
-        {
-            var parameters = new object?[paramsCount];
+            parameters = new object?[paramsCount];
 
             for (int i = 0; i < route.Template.Length; i++)
             {
@@ -35,12 +28,15 @@ internal class ActionActivator
                 if (segment.Type == SegmentType.Parametric)
                 {
                     var info = segment.ParameterInfo!;
-                    parameters[info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
+                    var value = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
+
+                    parameters[info.Position] = value;
+                    actionParams[info.Name!] = value;
                 }
             }
-
-            return parameters;
         }
+
+        _context = new(controller, scope.ServiceProvider, actionParams);
     }
 
     private async ValueTask Activate(int step)
@@ -51,7 +47,6 @@ internal class ActionActivator
         }
         else
         {
-            var parameters = GetParams(_topic, _route);
             var returnValue = _route.Method.Invoke(_context.Controller, parameters);
 
             if (returnValue is Task task)
