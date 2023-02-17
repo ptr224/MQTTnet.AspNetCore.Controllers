@@ -11,13 +11,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddMqttServer(options =>
-{
-    options.WithConnectionBacklog(1000);
-    options.WithDefaultEndpoint();
-    options.WithDefaultEndpointPort(1883);
-});
-builder.Services.AddMqttTcpServerAdapter();
+builder.Services.AddMqttServer();
+//builder.Services.AddMqttTcpServerAdapter();
 builder.Services.AddMqttWebSocketServerAdapter();
 builder.Services.AddConnections();
 
