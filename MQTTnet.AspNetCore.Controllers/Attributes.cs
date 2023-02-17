@@ -30,10 +30,8 @@ public sealed class MqttSubscribeAttribute : MqttRouteAttribute
     { }
 }
 
-public delegate ValueTask MqttActionFilterDelegate();
-
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-public abstract class MqttActionFilterAttribute : Attribute
+public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter
 {
     public int Order { get; set; }
 

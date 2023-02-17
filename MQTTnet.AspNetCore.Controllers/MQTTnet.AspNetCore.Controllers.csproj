@@ -8,10 +8,10 @@
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Authors>LambdaCom</Authors>
     <Copyright>Copyright (c) LambdaCom 2022</Copyright>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <Nullable>enable</Nullable>
     <RepositoryUrl>https://github.com/ptr224/MQTTnet.AspNetCore.Controllers</RepositoryUrl>
-    <Description>Use AspNet goodies as Controllers, ContextAccessors and ActionFilters in MQTTnet</Description>
+    <Description>Use AspNet goodies like Controllers, ContextAccessors and ActionFilters in MQTTnet</Description>
   </PropertyGroup>
 
   <ItemGroup>

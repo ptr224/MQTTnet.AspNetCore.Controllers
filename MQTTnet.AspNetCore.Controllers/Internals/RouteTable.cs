@@ -36,7 +36,7 @@ internal class RouteTable
     private readonly Route[] _publishRoutes;
     private readonly Route[] _subscribeRoutes;
 
-    public RouteTable(IEnumerable<Type> controllers)
+    public RouteTable(IEnumerable<Type> controllers, IEnumerable<IMqttActionFilter> globalFilters)
     {
         // Seleziona dai controller specificati tutti i metodi con un template e ritornane la route
 
@@ -51,11 +51,12 @@ internal class RouteTable
             foreach (var method in controller.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
                 // Crea coda filtri
-                // Prima i filtri del controller base, poi del controller derivato, poi dell'azione base, poi dell'azione derivata
+                // Prima i filtri globali, poi del controller base, poi del controller derivato, poi dell'azione base, poi dell'azione derivata
                 // Infine riordina secondo i parametri utente
 
                 var actionFilters = method.GetCustomAttributes<MqttActionFilterAttribute>(true)
                     .Concat(controllerFilters)
+                    .Concat(globalFilters)
                     .Reverse()
                     .OrderBy(f => f.Order);
 

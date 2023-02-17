@@ -24,3 +24,12 @@ public interface IMqttContextAccessor
     InterceptingPublishEventArgs? PublishContext { get; set; }
     InterceptingSubscriptionEventArgs? SubscriptionContext { get; set; }
 }
+
+public delegate ValueTask MqttActionFilterDelegate();
+
+public interface IMqttActionFilter
+{
+    int Order { get; }
+
+    ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next);
+}

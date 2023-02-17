@@ -16,7 +16,11 @@ builder.Services.AddMqttServer();
 builder.Services.AddMqttWebSocketServerAdapter();
 builder.Services.AddConnections();
 
-builder.Services.AddMqttControllers(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddMqttControllers(options =>
+{
+    options.AddAssembliesFromCurrentDomain();
+    options.Filters.Add(new MqttTest.MqttControllers.ActionFilter5Attribute());
+});
 builder.Services.AddMqttContextAccessor();
 builder.Services.AddMqttAuthenticationController<MqttAuthenticationController>();
 builder.Services.AddMqttConnectionController<MqttConnectionController>();

@@ -10,14 +10,19 @@ namespace MQTTnet.AspNetCore.Controllers;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddMqttControllers(this IServiceCollection services, params Assembly[] assemblies)
+    public static IServiceCollection AddMqttControllers(this IServiceCollection services, Action<MqttControllersOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(assemblies);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        // Configura servizio
+
+        var options = new MqttControllersOptions();
+        configure(options);
 
         // Trova e aggiungi tutti i controller
 
-        var controllers = assemblies
+        var controllers = options.Assemblies
             .SelectMany(a => a.GetTypes())
             .Where(type => type.IsSubclassOf(typeof(MqttControllerBase)) && !type.IsAbstract)
             .ToList();
@@ -27,12 +32,15 @@ public static class ServiceCollectionExtensions
 
         // Aggiungi RouteTable e Broker
 
-        services.TryAddSingleton(new RouteTable(controllers));
+        services.TryAddSingleton(new RouteTable(controllers, options.Filters));
         services.TryAddSingleton<Broker>();
         services.TryAddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
 
         return services;
     }
+
+    public static IServiceCollection AddMqttControllers(this IServiceCollection services)
+        => services.AddMqttControllers(options => options.AddAssembliesFromCurrentDomain());
 
     public static IServiceCollection AddMqttContextAccessor(this IServiceCollection services)
     {

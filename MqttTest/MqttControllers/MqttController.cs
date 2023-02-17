@@ -52,6 +52,12 @@ internal class ActionFilter4Attribute : ActionFilterAttribute
     { }
 }
 
+internal class ActionFilter5Attribute : ActionFilterAttribute
+{
+    public ActionFilter5Attribute() : base(5)
+    { }
+}
+
 [ActionFilter4(Order = 1)]
 public abstract class MqttControllerDefault : MqttControllerBase
 {
