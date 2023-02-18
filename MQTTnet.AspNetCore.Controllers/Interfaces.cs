@@ -33,3 +33,8 @@ public interface IMqttActionFilter
 
     ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next);
 }
+
+public interface IMqttModelBinder
+{
+    ValueTask BindModelAsync(ModelBindingContext context);
+}

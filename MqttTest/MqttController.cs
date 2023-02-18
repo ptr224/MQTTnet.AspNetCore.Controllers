@@ -1,72 +1,20 @@
 ﻿using MQTTnet;
 using MQTTnet.AspNetCore.Controllers;
-using MqttTest.Services;
 
-namespace MqttTest.MqttControllers;
+namespace MqttTest;
 
-internal abstract class ActionFilterAttribute : MqttActionFilterAttribute
-{
-    private readonly int _value;
-
-    public ActionFilterAttribute(int value)
-    {
-        _value = value;
-    }
-
-    public override async ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next)
-    {
-        var logger = context.Services.GetRequiredService<ILogger<ActionFilterAttribute>>();
-
-        if (context.Parameters.TryGetValue("serial", out var serial))
-        {
-            logger.LogDebug("Action param serial = {serial}", serial);
-        }
-
-        logger.LogDebug("Filter {value} begin", _value);
-        await next();
-        logger.LogDebug("Filter {value} end", _value);
-    }
-}
-
-internal class ActionFilter1Attribute : ActionFilterAttribute
-{
-    public ActionFilter1Attribute() : base(1)
-    { }
-}
-
-internal class ActionFilter2Attribute : ActionFilterAttribute
-{
-    public ActionFilter2Attribute() : base(2)
-    { }
-}
-
-internal class ActionFilter3Attribute : ActionFilterAttribute
-{
-    public ActionFilter3Attribute() : base(3)
-    { }
-}
-
-internal class ActionFilter4Attribute : ActionFilterAttribute
-{
-    public ActionFilter4Attribute() : base(4)
-    { }
-}
-
-internal class ActionFilter5Attribute : ActionFilterAttribute
-{
-    public ActionFilter5Attribute() : base(5)
-    { }
-}
-
-[ActionFilter4(Order = 1)]
+[ActionFilter2(Order = 1)]
+[StringModelBinder2]
 public abstract class MqttControllerDefault : MqttControllerBase
 {
-    [ActionFilter2(Order = 1)]
-    [MqttPublish("+/we")]
-    public virtual void Test() { }
+    [ActionFilter4(Order = 1)]
+    [StringModelBinder4]
+    [MqttPublish("{test}/we")]
+    public virtual void Test([StringModelBinder6] string test) { }
 }
 
 [ActionFilter3]
+[StringModelBinder3]
 public class MqttController : MqttControllerDefault
 {
     private readonly ILogger<MqttController> _logger;
@@ -78,11 +26,12 @@ public class MqttController : MqttControllerDefault
         _service = service;
     }
 
-    [ActionFilter1]
-    [MqttPublish("+/dai")]
-    public override void Test()
+    [ActionFilter5]
+    [StringModelBinder5]
+    [MqttPublish("{test}/dai")]
+    public override void Test([StringModelBinder7] string test)
     {
-        base.Test();
+        _logger.LogInformation("Test = {test}", test);
     }
 
     [MqttPublish("+/+/#")]

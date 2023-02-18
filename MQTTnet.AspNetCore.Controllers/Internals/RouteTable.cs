@@ -36,7 +36,7 @@ internal class RouteTable
     private readonly Route[] _publishRoutes;
     private readonly Route[] _subscribeRoutes;
 
-    public RouteTable(IEnumerable<Type> controllers, IEnumerable<IMqttActionFilter> globalFilters)
+    public RouteTable(IEnumerable<Type> controllers, IEnumerable<IMqttActionFilter> globalFilters, IEnumerable<IMqttModelBinder> globalBinders)
     {
         // Seleziona dai controller specificati tutti i metodi con un template e ritornane la route
 
@@ -47,6 +47,7 @@ internal class RouteTable
         {
             var routeAttribute = controller.GetCustomAttribute<MqttRouteAttribute>(true);
             var controllerFilters = controller.GetCustomAttributes<MqttActionFilterAttribute>(true);
+            var controllerBinders = controller.GetCustomAttributes<MqttModelBinderAttribute>(true);
 
             foreach (var method in controller.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
@@ -58,7 +59,16 @@ internal class RouteTable
                     .Concat(controllerFilters)
                     .Concat(globalFilters)
                     .Reverse()
-                    .OrderBy(f => f.Order);
+                    .OrderBy(f => f.Order)
+                    .ToArray();
+
+                // Crea coda binders
+                // Prima i filtri dell'azione, poi quelli del controller, poi quelli globali
+
+                var modelBinders = method.GetCustomAttributes<MqttModelBinderAttribute>(true)
+                    .Concat(controllerBinders)
+                    .Concat(globalBinders)
+                    .ToArray();
 
                 // Verifica che il metodo abbia un template
 
@@ -73,7 +83,7 @@ internal class RouteTable
                         ? publishAttribute.Template
                         : string.Join('/', routeAttribute.Template, publishAttribute.Template);
 
-                    publishRoutes.Add(new(method, template, actionFilters));
+                    publishRoutes.Add(new(method, template, actionFilters, modelBinders));
                     continue;
                 }
 
@@ -88,7 +98,7 @@ internal class RouteTable
                         ? subscribeAttribute.Template
                         : string.Join('/', routeAttribute.Template, subscribeAttribute.Template);
 
-                    subscribeRoutes.Add(new(method, template, actionFilters));
+                    subscribeRoutes.Add(new(method, template, actionFilters, modelBinders));
                     continue;
                 }
             }

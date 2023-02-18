@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using MQTTnet.AspNetCore.Controllers.Internals;
 using System;
 using System.Linq;
-using System.Reflection;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
@@ -32,7 +31,7 @@ public static class ServiceCollectionExtensions
 
         // Aggiungi RouteTable e Broker
 
-        services.TryAddSingleton(new RouteTable(controllers, options.Filters));
+        services.TryAddSingleton(new RouteTable(controllers, options.Filters, options.Binders));
         services.TryAddSingleton<Broker>();
         services.TryAddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
 

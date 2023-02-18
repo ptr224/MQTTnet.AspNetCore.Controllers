@@ -14,11 +14,11 @@ public class ActionContext
 {
     public MqttControllerBase Controller { get; }
     public IServiceProvider Services { get; }
-    public IDictionary<string, string> Parameters { get; }
+    public IReadOnlyDictionary<string, string> Parameters { get; }
 
     public MqttContext MqttContext => Controller.MqttContext;
 
-    public ActionContext(MqttControllerBase controller, IServiceProvider serviceProvider, IDictionary<string, string> parameters)
+    public ActionContext(MqttControllerBase controller, IServiceProvider serviceProvider, IReadOnlyDictionary<string, string> parameters)
     {
         ArgumentNullException.ThrowIfNull(controller);
         ArgumentNullException.ThrowIfNull(serviceProvider);
@@ -27,5 +27,39 @@ public class ActionContext
         Controller = controller;
         Services = serviceProvider;
         Parameters = parameters;
+    }
+}
+
+public readonly record struct ModelBindingValue(Type Type, string Value);
+
+public readonly record struct ModelBindingResult(bool IsSet, object? Model)
+{
+    public static ModelBindingResult Failed()
+    {
+        return new(false, null);
+    }
+
+    public static ModelBindingResult Success(object? model)
+    {
+        return new(true, model);
+    }
+}
+
+public class ModelBindingContext
+{
+    public IServiceProvider Services { get; }
+    public ModelBindingValue Value { get; }
+    public ModelBindingResult Result { get; set; }
+
+    public ModelBindingContext(IServiceProvider services, Type type, string value)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(value);
+
+        Services = services;
+
+        Value = new(type, value);
+        Result = ModelBindingResult.Failed();
     }
 }

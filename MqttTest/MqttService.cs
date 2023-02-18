@@ -1,7 +1,7 @@
 ﻿using MQTTnet;
 using MQTTnet.AspNetCore.Controllers;
 
-namespace MqttTest.Services;
+namespace MqttTest;
 
 public class MqttService
 {

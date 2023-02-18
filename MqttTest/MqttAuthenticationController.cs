@@ -2,7 +2,7 @@
 using MQTTnet.Protocol;
 using MQTTnet.Server;
 
-namespace MqttTest.Services;
+namespace MqttTest;
 
 public class MqttAuthenticationController : IMqttAuthenticationController
 {

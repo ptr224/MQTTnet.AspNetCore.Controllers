@@ -1,14 +1,27 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
 internal class ActionActivator
 {
-    private readonly object?[]? parameters;
+    private class DefaultModelBinder : IMqttModelBinder
+    {
+        public static DefaultModelBinder Instance { get; } = new();
+
+        public ValueTask BindModelAsync(ModelBindingContext context)
+        {
+            var value = context.Value.Type.IsEnum ? Enum.Parse(context.Value.Type, context.Value.Value) : Convert.ChangeType(context.Value.Value, context.Value.Type);
+            context.Result = ModelBindingResult.Success(value);
+            return ValueTask.CompletedTask;
+        }
+    }
+
     private readonly Route _route;
     private readonly ActionContext _context;
 
@@ -20,26 +33,49 @@ internal class ActionActivator
 
         var actionParams = new Dictionary<string, string>();
 
-        var methodParams = route.Method.GetParameters();
-        if (methodParams.Length > 0)
-            parameters = new object?[methodParams.Length];
-
         for (int i = 0; i < route.Template.Length; i++)
         {
             var segment = route.Template[i];
             if (segment.Type == SegmentType.Parametric)
-            {
                 actionParams[segment.Segment] = topic[i];
-
-                var info = methodParams.Where(p => p.Name == segment.Segment).FirstOrDefault();
-                if (info is not null)
-                    parameters![info.Position] = info.ParameterType.IsEnum ? Enum.Parse(info.ParameterType, topic[i]) : Convert.ChangeType(topic[i], info.ParameterType);
-            }
         }
 
         // Assegna contesto
 
         _context = new(controller, scope.ServiceProvider, actionParams);
+    }
+
+    private async ValueTask<object?[]?> GetParameters()
+    {
+        var paramsCount = _route.Method.GetParameters().Length;
+        if (paramsCount == 0)
+            return null;
+
+        var parameters = new object?[paramsCount];
+
+        foreach(var segment in _route.Template.Where(s => s.Type == SegmentType.Parametric && s.Parameter is not null))
+        {
+            var param = segment.Parameter!.Info;
+
+            // Scorri binder finché non viene tornato un risultato
+            // Prima binder del parametro, poi gli altri, infine default
+
+            var binderContext = new ModelBindingContext(_context.Services, param.ParameterType, _context.Parameters[segment.Segment]);
+            var binders = segment.Parameter.ModelBinders
+                .Concat(_route.ModelBinders)
+                .Append(DefaultModelBinder.Instance);
+
+            foreach (var binder in binders)
+            {
+                await binder.BindModelAsync(binderContext);
+                if (binderContext.Result.IsSet)
+                    break;
+            }
+
+            parameters[param.Position] = binderContext.Result.Model;
+        }
+
+        return parameters;
     }
 
     private async ValueTask Activate(int step)
@@ -52,6 +88,7 @@ internal class ActionActivator
         }
         else
         {
+            var parameters = await GetParameters();
             var returnValue = _route.Method.Invoke(_context.Controller, parameters);
 
             if (returnValue is Task task)

@@ -8,6 +8,7 @@ public class MqttControllersOptions
 {
     public IList<Assembly> Assemblies { get; } = new List<Assembly>();
     public IList<IMqttActionFilter> Filters { get; } = new List<IMqttActionFilter>();
+    public IList<IMqttModelBinder> Binders { get; } = new List<IMqttModelBinder>();
 
     public MqttControllersOptions AddAssemblies(params Assembly[] assemblies)
     {

@@ -37,3 +37,9 @@ public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter
 
     public abstract ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next);
 }
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Parameter, AllowMultiple = true, Inherited = true)]
+public abstract class MqttModelBinderAttribute : Attribute, IMqttModelBinder
+{
+    public abstract ValueTask BindModelAsync(ModelBindingContext context);
+}

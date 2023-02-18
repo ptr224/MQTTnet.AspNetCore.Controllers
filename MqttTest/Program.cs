@@ -1,6 +1,6 @@
 using MQTTnet.AspNetCore;
 using MQTTnet.AspNetCore.Controllers;
-using MqttTest.Services;
+using MqttTest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +19,8 @@ builder.Services.AddConnections();
 builder.Services.AddMqttControllers(options =>
 {
     options.AddAssembliesFromCurrentDomain();
-    options.Filters.Add(new MqttTest.MqttControllers.ActionFilter5Attribute());
+    options.Filters.Add(new ActionFilter1Attribute());
+    options.Binders.Add(new StringModelBinder1Attribute());
 });
 builder.Services.AddMqttContextAccessor();
 builder.Services.AddMqttAuthenticationController<MqttAuthenticationController>();

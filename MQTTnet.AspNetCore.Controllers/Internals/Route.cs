@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -13,18 +12,26 @@ internal enum SegmentType
     MultiLevelWildcard
 }
 
-internal record struct TemplateSegment(string Segment, SegmentType Type);
+internal record ParametricSegmentInfo(IMqttModelBinder[] ModelBinders, ParameterInfo Info);
+
+internal record TemplateSegment(string Segment, SegmentType Type, ParametricSegmentInfo? Parameter);
 
 internal sealed class Route
 {
     public MethodInfo Method { get; }
     public TemplateSegment[] Template { get; }
     public IMqttActionFilter[] ActionFilters { get; }
+    public IMqttModelBinder[] ModelBinders { get; }
 
-    public Route(MethodInfo action, string template, IEnumerable<IMqttActionFilter> actionFilters)
+    public Route(MethodInfo action, string template, IMqttActionFilter[] actionFilters, IMqttModelBinder[] modelBinders)
     {
+        Method = action;
+        ActionFilters = actionFilters;
+        ModelBinders = modelBinders;
+
         // Analizza i singoli segmenti del template (no lazy loading)
 
+        var parameters = action.GetParameters();
         var segments = template
             .Split('/')
             .Select(s => s switch
@@ -46,10 +53,28 @@ internal sealed class Route
                     _ => (SegmentType.Normal, s)
                 };
 
-                if (type == SegmentType.Parametric && string.IsNullOrWhiteSpace(segment))
-                    throw new InvalidOperationException($"Invalid template '{template}'. Empty parameter name in segment '{s}' is not allowed.");
+                ParametricSegmentInfo? info = null;
 
-                return new TemplateSegment(segment, type);
+                if (type == SegmentType.Parametric)
+                {
+                    // Verifica che il parametro abbia un nome valido
+
+                    if (segment.All(c => char.IsLetterOrDigit(c)))
+                        throw new InvalidOperationException($"Invalid template '{template}'. The parameter name in segment '{s}' is not allowed.");
+
+                    // Verifica se il segmento abbia un parametro corrispondente
+
+                    var param = parameters.Where(p => p.Name == segment).FirstOrDefault();
+                    if (param is not null)
+                    {
+                        var binders = param.GetCustomAttributes<MqttModelBinderAttribute>(true)
+                            .ToArray();
+
+                        info = new(binders, param);
+                    }
+                }
+
+                return new TemplateSegment(segment, type, info);
             })
             .ToList();
 
@@ -61,8 +86,7 @@ internal sealed class Route
 
         // Verifica che i parametri corrispondano a quelli dell'azione
 
-        var actionParams = action
-            .GetParameters()
+        var actionParams = parameters
             .Select(p => p.Name);
 
         var templateParams = segments
@@ -74,9 +98,7 @@ internal sealed class Route
 
         // Inizializza
 
-        Method = action;
         Template = segments.ToArray();
-        ActionFilters = actionFilters.ToArray();
     }
 
     public bool Match(string[] topic)
