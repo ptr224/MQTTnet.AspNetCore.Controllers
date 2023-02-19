@@ -21,8 +21,8 @@ public static class ServiceCollectionExtensions
         // Aggiungi RouteTable e Broker
 
         services.TryAddSingleton(new RouteTable(options));
-        services.TryAddSingleton<Broker>();
-        services.TryAddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
+        services.TryAddSingleton<MqttBroker>();
+        services.TryAddSingleton<IMqttBroker>(p => p.GetRequiredService<MqttBroker>());
 
         return services;
     }
@@ -78,7 +78,7 @@ public static class ServiceCollectionExtensions
 
         app.UseMqttServer(server =>
         {
-            var broker = app.ApplicationServices.GetRequiredService<Broker>();
+            var broker = app.ApplicationServices.GetRequiredService<MqttBroker>();
             broker.UseMqttServer(server);
         });
 

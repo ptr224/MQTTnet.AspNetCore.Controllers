@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
-public interface IBroker
+public interface IMqttBroker
 {
     Task Send(MqttApplicationMessage message);
 }

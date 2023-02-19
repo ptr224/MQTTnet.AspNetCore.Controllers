@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal sealed class Broker : IBroker
+internal sealed class MqttBroker : IMqttBroker
 {
-    private readonly ILogger<Broker> _logger;
+    private readonly ILogger<MqttBroker> _logger;
     private readonly RouteTable _routeTable;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMqttContextAccessor? _mqttContextAccessor;
@@ -20,8 +20,8 @@ internal sealed class Broker : IBroker
 
     private MqttServer? mqttServer;
 
-    public Broker(
-        ILogger<Broker> logger,
+    public MqttBroker(
+        ILogger<MqttBroker> logger,
         RouteTable routeTable,
         IServiceScopeFactory scopeFactory,
         IServiceProviderIsService isService,
@@ -36,33 +36,6 @@ internal sealed class Broker : IBroker
         hasAuthenticationController = isService.IsService(typeof(IMqttAuthenticationController));
         hasConnectionController = isService.IsService(typeof(IMqttConnectionController));
         serverId = Guid.NewGuid().ToString("N");
-    }
-
-    private async Task ValidatingConnectionAsync(ValidatingConnectionEventArgs args)
-    {
-        try
-        {
-            if (args.ClientId == serverId)
-            {
-                // Impedisci accesso se stesso ID del server
-
-                args.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
-            }
-            else
-            {
-                // Autentica client
-
-                await using var scope = _scopeFactory.CreateAsyncScope();
-                var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
-
-                await handler.AuthenticateAsync(args);
-            }
-        }
-        catch (Exception e)
-        {
-            args.ReasonCode = MqttConnectReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error in MQTT authentication handler for '{ClientId}': ", args.ClientId);
-        }
     }
 
     private async Task InterceptingPublishAsync(InterceptingPublishEventArgs args)
@@ -190,6 +163,33 @@ internal sealed class Broker : IBroker
 
             if (_mqttContextAccessor is not null)
                 _mqttContextAccessor.SubscriptionContext = null;
+        }
+    }
+
+    private async Task ValidatingConnectionAsync(ValidatingConnectionEventArgs args)
+    {
+        try
+        {
+            if (args.ClientId == serverId)
+            {
+                // Impedisci accesso se stesso ID del server
+
+                args.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
+            }
+            else
+            {
+                // Autentica client
+
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
+
+                await handler.AuthenticateAsync(args);
+            }
+        }
+        catch (Exception e)
+        {
+            args.ReasonCode = MqttConnectReasonCode.UnspecifiedError;
+            _logger.LogCritical(e, "Error in MQTT authentication handler for '{ClientId}': ", args.ClientId);
         }
     }
 

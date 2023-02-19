@@ -7,9 +7,9 @@ public class MqttService
 {
     private readonly ILogger<MqttService> _logger;
     private readonly IMqttContextAccessor _mqttContextAccessor;
-    private readonly IBroker _broker;
+    private readonly IMqttBroker _broker;
 
-    public MqttService(ILogger<MqttService> logger, IMqttContextAccessor mqttContextAccessor, IBroker broker)
+    public MqttService(ILogger<MqttService> logger, IMqttContextAccessor mqttContextAccessor, IMqttBroker broker)
     {
         _logger = logger;
         _mqttContextAccessor = mqttContextAccessor;
