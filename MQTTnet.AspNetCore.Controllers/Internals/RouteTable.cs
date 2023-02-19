@@ -66,7 +66,6 @@ internal class RouteTable
                     .Concat(controllerFilters)
                     .Concat(options.Filters)
                     .Reverse()
-                    .OrderBy(f => f.Order)
                     .ToArray();
 
                 // Crea coda binders

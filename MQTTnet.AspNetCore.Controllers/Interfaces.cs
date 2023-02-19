@@ -29,8 +29,6 @@ public delegate ValueTask MqttActionFilterDelegate();
 
 public interface IMqttActionFilter
 {
-    int Order { get; }
-
     ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next);
 }
 

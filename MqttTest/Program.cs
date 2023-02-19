@@ -27,6 +27,8 @@ builder.Services.AddMqttControllers(options =>
 builder.Services.AddMqttContextAccessor();
 
 builder.Services.AddScoped<MqttService>();
+builder.Services.AddScoped<ActionFilterTest>();
+builder.Services.AddScoped<ModelBinderTest>();
 
 var app = builder.Build();
 

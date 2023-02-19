@@ -3,11 +3,43 @@ using MQTTnet.AspNetCore.Controllers;
 
 namespace MqttTest;
 
-[ActionFilter2(Order = 1)]
+public class ActionFilterTest : IMqttActionFilter
+{
+    private readonly ILogger<ActionFilterTest> _logger;
+
+    public ActionFilterTest(ILogger<ActionFilterTest> logger)
+    {
+        _logger = logger;
+    }
+
+    public ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next)
+    {
+        _logger.LogInformation("Test ActionFilter from service");
+        return next();
+    }
+}
+
+public class ModelBinderTest : IMqttModelBinder
+{
+    private readonly ILogger<ModelBinderTest> _logger;
+
+    public ModelBinderTest(ILogger<ModelBinderTest> logger)
+    {
+        _logger = logger;
+    }
+
+    public ValueTask BindModelAsync(ModelBindingContext context)
+    {
+        _logger.LogInformation("Test ModelBinder from service");
+        return ValueTask.CompletedTask;
+    }
+}
+
+[ActionFilter2]
 [StringModelBinder2]
 public abstract class MqttControllerDefault : MqttControllerBase
 {
-    [ActionFilter4(Order = 1)]
+    [ActionFilter4]
     [StringModelBinder4]
     [MqttPublish("{test}/we")]
     public virtual void Test([StringModelBinder6] string test) { }
@@ -28,6 +60,8 @@ public class MqttController : MqttControllerDefault
 
     [ActionFilter5]
     [StringModelBinder5]
+    [MqttActionFilterService(typeof(ActionFilterTest))]
+    [MqttModelBinderService(typeof(ModelBinderTest))]
     [MqttPublish("{test}/dai")]
     public override void Test([StringModelBinder7] string test)
     {

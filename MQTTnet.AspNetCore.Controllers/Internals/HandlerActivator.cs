@@ -8,7 +8,7 @@ internal class HandlerActivator<T> : IAsyncDisposable where T : class
 {
     private readonly object obj;
 
-    public T Handler => (obj as T)!;
+    public T Handler => (T)obj;
 
     public HandlerActivator(IServiceProvider services, Type type)
     {

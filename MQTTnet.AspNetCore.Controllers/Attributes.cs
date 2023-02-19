@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers;
@@ -33,13 +34,53 @@ public sealed class MqttSubscribeAttribute : MqttRouteAttribute
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
 public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter
 {
-    public int Order { get; set; }
-
     public abstract ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next);
+}
+
+public class MqttActionFilterServiceAttribute : MqttActionFilterAttribute
+{
+    private readonly Type _service;
+
+    public MqttActionFilterServiceAttribute(Type service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+
+        if (service.IsAssignableTo(typeof(IMqttActionFilter)))
+            _service = service;
+        else
+            throw new ArgumentException($"Type must implement {nameof(IMqttActionFilter)}", nameof(service));
+    }
+
+    public override ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next)
+    {
+        var service = (IMqttActionFilter)context.Services.GetRequiredService(_service);
+        return service.OnActionAsync(context, next);
+    }
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Parameter, AllowMultiple = true, Inherited = true)]
 public abstract class MqttModelBinderAttribute : Attribute, IMqttModelBinder
 {
     public abstract ValueTask BindModelAsync(ModelBindingContext context);
+}
+
+public class MqttModelBinderServiceAttribute : MqttModelBinderAttribute
+{
+    private readonly Type _service;
+
+    public MqttModelBinderServiceAttribute(Type service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+
+        if (service.IsAssignableTo(typeof(IMqttModelBinder)))
+            _service = service;
+        else
+            throw new ArgumentException($"Type must implement {nameof(IMqttModelBinder)}", nameof(service));
+    }
+
+    public override ValueTask BindModelAsync(ModelBindingContext context)
+    {
+        var service = (IMqttModelBinder)context.Services.GetRequiredService(_service);
+        return service.BindModelAsync(context);
+    }
 }
