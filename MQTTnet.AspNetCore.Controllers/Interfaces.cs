@@ -10,13 +10,13 @@ public interface IMqttBroker
 
 public interface IMqttAuthenticationHandler
 {
-    Task AuthenticateAsync(ValidatingConnectionEventArgs context);
+    ValueTask AuthenticateAsync(ValidatingConnectionEventArgs context);
 }
 
 public interface IMqttConnectionHandler
 {
-    Task ClientConnectedAsync(ClientConnectedEventArgs context);
-    Task ClientDisconnectedAsync(ClientDisconnectedEventArgs context);
+    ValueTask ClientConnectedAsync(ClientConnectedEventArgs context);
+    ValueTask ClientDisconnectedAsync(ClientDisconnectedEventArgs context);
 }
 
 public interface IMqttContextAccessor

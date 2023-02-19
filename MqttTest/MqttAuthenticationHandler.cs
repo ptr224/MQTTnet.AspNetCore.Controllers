@@ -6,7 +6,7 @@ namespace MqttTest;
 
 public class MqttAuthenticationHandler : IMqttAuthenticationHandler
 {
-    public Task AuthenticateAsync(ValidatingConnectionEventArgs context)
+    public ValueTask AuthenticateAsync(ValidatingConnectionEventArgs context)
     {
         /*if (context.ClientId.Length < 10)
             context.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
@@ -17,6 +17,6 @@ public class MqttAuthenticationHandler : IMqttAuthenticationHandler
 
         context.ReasonCode = MqttConnectReasonCode.Success;
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }
