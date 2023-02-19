@@ -8,12 +8,12 @@ public interface IMqttBroker
     Task Send(MqttApplicationMessage message);
 }
 
-public interface IMqttAuthenticationController
+public interface IMqttAuthenticationHandler
 {
     Task AuthenticateAsync(ValidatingConnectionEventArgs context);
 }
 
-public interface IMqttConnectionController
+public interface IMqttConnectionHandler
 {
     Task ClientConnectedAsync(ClientConnectedEventArgs context);
     Task ClientDisconnectedAsync(ClientDisconnectedEventArgs context);

@@ -18,7 +18,7 @@ internal class RouteTable
         };
 
         if (!validTypes.Contains(method.ReturnType))
-            throw new InvalidOperationException($"Invalid action. All routed publish methods must return either {string.Join(" or ", validTypes.Select(t => t.Name))}.");
+            throw new InvalidOperationException($"Invalid return type. All actions must return either {string.Join(" or ", validTypes.Select(t => t.Name))}.");
     }
 
     private static void ThrowIfOverlappingRoutes(IEnumerable<Route> routes)
@@ -35,6 +35,9 @@ internal class RouteTable
 
     private readonly Route[] _publishRoutes;
     private readonly Route[] _subscribeRoutes;
+
+    public Type? AuthenticationHandler { get; }
+    public Type? ConnectionHandler { get; }
 
     public RouteTable(MqttControllersOptions options)
     {
@@ -115,6 +118,9 @@ internal class RouteTable
 
         _publishRoutes = publishRoutes.ToArray();
         _subscribeRoutes = subscribeRoutes.ToArray();
+
+        AuthenticationHandler = options.AuthenticationHandler;
+        ConnectionHandler = options.ConnectionHandler;
     }
 
     public Route? MatchPublish(string[] topic)

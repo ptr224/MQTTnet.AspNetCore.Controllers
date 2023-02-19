@@ -6,7 +6,10 @@ namespace MQTTnet.AspNetCore.Controllers;
 
 public class MqttControllersOptions
 {
-    public IList<Assembly> Assemblies { get; } = new List<Assembly>();
+    internal IList<Assembly> Assemblies { get; } = new List<Assembly>();
+    internal Type? AuthenticationHandler { get; set; }
+    internal Type? ConnectionHandler { get; set; }
+
     public IList<IMqttActionFilter> Filters { get; } = new List<IMqttActionFilter>();
     public IList<IMqttModelBinder> Binders { get; } = new List<IMqttModelBinder>();
 
@@ -36,4 +39,38 @@ public class MqttControllersOptions
 
     public MqttControllersOptions AddAssemblyContainingType<T>()
         => AddAssemblyContainingType(typeof(T));
+
+    public MqttControllersOptions WithAuthenticationHandler(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (type.IsAssignableTo(typeof(IMqttAuthenticationHandler)))
+            AuthenticationHandler = type;
+        else
+            throw new ArgumentException($"Type must implement {nameof(IMqttAuthenticationHandler)}", nameof(type));
+
+        return this;
+    }
+
+    public MqttControllersOptions WithAuthenticationHandler<T>() where T : IMqttAuthenticationHandler
+    {
+        return WithAuthenticationHandler(typeof(T));
+    }
+
+    public MqttControllersOptions WithConnectionHandler(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (type.IsAssignableTo(typeof(IMqttConnectionHandler)))
+            ConnectionHandler = type;
+        else
+            throw new ArgumentException($"Type must implement {nameof(IMqttConnectionHandler)}", nameof(type));
+
+        return this;
+    }
+    
+    public MqttControllersOptions WithConnectionHandler<T>() where T : IMqttConnectionHandler
+    {
+        return WithConnectionHandler(typeof(T));
+    }
 }

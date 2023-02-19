@@ -38,40 +38,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddMqttAuthenticationController(this IServiceCollection services, Type type)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(type);
-
-        if (!type.IsAssignableTo(typeof(IMqttAuthenticationController)))
-            throw new ArgumentException($"Type must implement {nameof(IMqttAuthenticationController)}", nameof(type));
-
-        services.TryAddScoped(typeof(IMqttAuthenticationController), type);
-        return services;
-    }
-
-    public static IServiceCollection AddMqttAuthenticationController<T>(this IServiceCollection services) where T : IMqttAuthenticationController
-    {
-        return services.AddMqttAuthenticationController(typeof(T));
-    }
-
-    public static IServiceCollection AddMqttConnectionController(this IServiceCollection services, Type type)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(type);
-
-        if (!type.IsAssignableTo(typeof(IMqttConnectionController)))
-            throw new ArgumentException($"Type must implement {nameof(IMqttConnectionController)}", nameof(type));
-
-        services.TryAddScoped(typeof(IMqttConnectionController), type);
-        return services;
-    }
-
-    public static IServiceCollection AddMqttConnectionController<T>(this IServiceCollection services) where T : IMqttConnectionController
-    {
-        return services.AddMqttConnectionController(typeof(T));
-    }
-
     public static IApplicationBuilder UseMqttControllers(this IApplicationBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);

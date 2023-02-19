@@ -14,27 +14,17 @@ internal sealed class MqttBroker : IMqttBroker
     private readonly RouteTable _routeTable;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMqttContextAccessor? _mqttContextAccessor;
-    private readonly bool hasAuthenticationController;
-    private readonly bool hasConnectionController;
     private readonly string serverId;
 
     private MqttServer? mqttServer;
 
-    public MqttBroker(
-        ILogger<MqttBroker> logger,
-        RouteTable routeTable,
-        IServiceScopeFactory scopeFactory,
-        IServiceProviderIsService isService,
-        IMqttContextAccessor? mqttContextAccessor = null
-    )
+    public MqttBroker(ILogger<MqttBroker> logger, RouteTable routeTable, IServiceScopeFactory scopeFactory, IMqttContextAccessor? mqttContextAccessor = null)
     {
         _logger = logger;
         _routeTable = routeTable;
         _scopeFactory = scopeFactory;
         _mqttContextAccessor = mqttContextAccessor;
 
-        hasAuthenticationController = isService.IsService(typeof(IMqttAuthenticationController));
-        hasConnectionController = isService.IsService(typeof(IMqttConnectionController));
         serverId = Guid.NewGuid().ToString("N");
     }
 
@@ -85,13 +75,13 @@ internal sealed class MqttBroker : IMqttBroker
         {
             args.ProcessPublish = false;
             args.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error in MQTT publish handler for '{Topic}': ", args.ApplicationMessage.Topic);
+            _logger.LogCritical(e, "Error in MQTT publish handler for '{topic}': ", args.ApplicationMessage.Topic);
         }
         catch (Exception e)
         {
             args.ProcessPublish = false;
             args.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error during MQTT publish handler activation for '{Topic}': ", args.ApplicationMessage.Topic);
+            _logger.LogCritical(e, "Error during MQTT publish handler activation for '{topic}': ", args.ApplicationMessage.Topic);
         }
         finally
         {
@@ -181,15 +171,14 @@ internal sealed class MqttBroker : IMqttBroker
                 // Autentica client
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
-
-                await handler.AuthenticateAsync(args);
+                await using var activator = new HandlerActivator<IMqttAuthenticationHandler>(scope.ServiceProvider, _routeTable.AuthenticationHandler!);
+                await activator.Handler.AuthenticateAsync(args);
             }
         }
         catch (Exception e)
         {
             args.ReasonCode = MqttConnectReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error in MQTT authentication handler for '{ClientId}': ", args.ClientId);
+            _logger.LogCritical(e, "Error in MQTT authentication handler for '{clientId}': ", args.ClientId);
         }
     }
 
@@ -198,13 +187,12 @@ internal sealed class MqttBroker : IMqttBroker
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
-            var handler = scope.ServiceProvider.GetRequiredService<IMqttConnectionController>();
-
-            await handler.ClientConnectedAsync(args);
+            await using var activator = new HandlerActivator<IMqttConnectionHandler>(scope.ServiceProvider, _routeTable.ConnectionHandler!);
+            await activator.Handler.ClientConnectedAsync(args);
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error in MQTT connection handler for '{ClientId}': ", args.ClientId);
+            _logger.LogCritical(e, "Error in MQTT connection handler for '{clientId}': ", args.ClientId);
         }
     }
 
@@ -213,13 +201,12 @@ internal sealed class MqttBroker : IMqttBroker
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
-            var handler = scope.ServiceProvider.GetRequiredService<IMqttConnectionController>();
-
-            await handler.ClientDisconnectedAsync(args);
+            await using var activator = new HandlerActivator<IMqttConnectionHandler>(scope.ServiceProvider, _routeTable.ConnectionHandler!);
+            await activator.Handler.ClientDisconnectedAsync(args);
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error in MQTT disconnection handler for '{ClientId}': ", args.ClientId);
+            _logger.LogCritical(e, "Error in MQTT disconnection handler for '{clientId}': ", args.ClientId);
         }
     }
 
@@ -234,14 +221,14 @@ internal sealed class MqttBroker : IMqttBroker
 
         // Attiva handler autenticazione se necessario
 
-        if (hasAuthenticationController)
+        if (_routeTable.AuthenticationHandler is not null)
         {
             server.ValidatingConnectionAsync += ValidatingConnectionAsync;
         }
 
         // Attiva handler connessioni se necessario
 
-        if (hasConnectionController)
+        if (_routeTable.ConnectionHandler is not null)
         {
             server.ClientConnectedAsync += ClientConnectedAsync;
             server.ClientDisconnectedAsync += ClientDisconnectedAsync;
@@ -256,6 +243,6 @@ internal sealed class MqttBroker : IMqttBroker
                 SenderClientId = serverId
             });
         else
-            throw new InvalidOperationException($"Please call {nameof(UseMqttServer)}() in startup before using");
+            throw new InvalidOperationException($"Please call {nameof(UseMqttServer)}() in startup to use this method");
     }
 }

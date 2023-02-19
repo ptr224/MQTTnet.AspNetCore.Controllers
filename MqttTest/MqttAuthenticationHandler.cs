@@ -4,7 +4,7 @@ using MQTTnet.Server;
 
 namespace MqttTest;
 
-public class MqttAuthenticationController : IMqttAuthenticationController
+public class MqttAuthenticationHandler : IMqttAuthenticationHandler
 {
     public Task AuthenticateAsync(ValidatingConnectionEventArgs context)
     {

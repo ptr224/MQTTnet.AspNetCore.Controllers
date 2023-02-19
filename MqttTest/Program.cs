@@ -19,12 +19,12 @@ builder.Services.AddConnections();
 builder.Services.AddMqttControllers(options =>
 {
     options.AddAssembliesFromCurrentDomain();
+    options.WithAuthenticationHandler<MqttAuthenticationHandler>();
+    options.WithConnectionHandler<MqttTest.MqttConnectionHandler>();
     options.Filters.Add(new ActionFilter1Attribute());
     options.Binders.Add(new StringModelBinder1Attribute());
 });
 builder.Services.AddMqttContextAccessor();
-builder.Services.AddMqttAuthenticationController<MqttAuthenticationController>();
-builder.Services.AddMqttConnectionController<MqttConnectionController>();
 
 builder.Services.AddScoped<MqttService>();
 
