@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MQTTnet.AspNetCore.Controllers.Internals;
 using System;
-using System.Linq;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
@@ -19,19 +18,9 @@ public static class ServiceCollectionExtensions
         var options = new MqttControllersOptions();
         configure(options);
 
-        // Trova e aggiungi tutti i controller
-
-        var controllers = options.Assemblies
-            .SelectMany(a => a.GetTypes())
-            .Where(type => type.IsSubclassOf(typeof(MqttControllerBase)) && !type.IsAbstract)
-            .ToList();
-
-        foreach (var controller in controllers)
-            services.TryAddScoped(controller);
-
         // Aggiungi RouteTable e Broker
 
-        services.TryAddSingleton(new RouteTable(controllers, options.Filters, options.Binders));
+        services.TryAddSingleton(new RouteTable(options));
         services.TryAddSingleton<Broker>();
         services.TryAddSingleton<IBroker>(p => p.GetRequiredService<Broker>());
 

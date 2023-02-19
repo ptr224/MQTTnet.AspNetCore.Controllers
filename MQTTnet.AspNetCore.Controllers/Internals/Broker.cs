@@ -11,9 +11,9 @@ namespace MQTTnet.AspNetCore.Controllers.Internals;
 internal sealed class Broker : IBroker
 {
     private readonly ILogger<Broker> _logger;
-    private readonly IServiceScopeFactory _scopeFactory;
     private readonly RouteTable _routeTable;
-    private readonly IMqttContextAccessor? mqttContextAccessor;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IMqttContextAccessor? _mqttContextAccessor;
     private readonly bool hasAuthenticationController;
     private readonly bool hasConnectionController;
     private readonly string serverId;
@@ -22,31 +22,31 @@ internal sealed class Broker : IBroker
 
     public Broker(
         ILogger<Broker> logger,
-        IServiceScopeFactory scopeFactory,
         RouteTable routeTable,
-        IServiceProvider serviceProvider,
-        IServiceProviderIsService isService
+        IServiceScopeFactory scopeFactory,
+        IServiceProviderIsService isService,
+        IMqttContextAccessor? mqttContextAccessor = null
     )
     {
         _logger = logger;
-        _scopeFactory = scopeFactory;
         _routeTable = routeTable;
+        _scopeFactory = scopeFactory;
+        _mqttContextAccessor = mqttContextAccessor;
 
-        mqttContextAccessor = serviceProvider.GetService<IMqttContextAccessor>();
         hasAuthenticationController = isService.IsService(typeof(IMqttAuthenticationController));
         hasConnectionController = isService.IsService(typeof(IMqttConnectionController));
         serverId = Guid.NewGuid().ToString("N");
     }
 
-    private async Task ValidatingConnectionAsync(ValidatingConnectionEventArgs context)
+    private async Task ValidatingConnectionAsync(ValidatingConnectionEventArgs args)
     {
         try
         {
-            if (context.ClientId == serverId)
+            if (args.ClientId == serverId)
             {
                 // Impedisci accesso se stesso ID del server
 
-                context.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
+                args.ReasonCode = MqttConnectReasonCode.ClientIdentifierNotValid;
             }
             else
             {
@@ -55,173 +55,171 @@ internal sealed class Broker : IBroker
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 var handler = scope.ServiceProvider.GetRequiredService<IMqttAuthenticationController>();
 
-                await handler.AuthenticateAsync(context);
+                await handler.AuthenticateAsync(args);
             }
         }
         catch (Exception e)
         {
-            context.ReasonCode = MqttConnectReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error in MQTT authentication handler for '{ClientId}': ", context.ClientId);
+            args.ReasonCode = MqttConnectReasonCode.UnspecifiedError;
+            _logger.LogCritical(e, "Error in MQTT authentication handler for '{ClientId}': ", args.ClientId);
         }
     }
 
-    private async Task InterceptingPublishAsync(InterceptingPublishEventArgs context)
+    private async Task InterceptingPublishAsync(InterceptingPublishEventArgs args)
     {
         try
         {
             // Setta contesto
 
-            if (mqttContextAccessor is not null)
-                mqttContextAccessor.PublishContext = context;
+            if (_mqttContextAccessor is not null)
+                _mqttContextAccessor.PublishContext = args;
 
             // Ignora i messaggi del server
 
-            if (context.ClientId == serverId)
+            if (args.ClientId == serverId)
                 return;
 
             // Controlla che il topic abbia un'azione corrispondente
 
-            string[] topic = context.ApplicationMessage.Topic.Split('/');
+            var topic = args.ApplicationMessage.Topic.Split('/');
             var route = _routeTable.MatchPublish(topic);
 
             if (route is null)
             {
-                context.ProcessPublish = false;
-                context.Response.ReasonCode = MqttPubAckReasonCode.TopicNameInvalid;
+                args.ProcessPublish = false;
+                args.Response.ReasonCode = MqttPubAckReasonCode.TopicNameInvalid;
             }
             else
             {
-                // Imposta contesto con valori di default
+                // Imposta valori di default
 
-                context.CloseConnection = false;
-                context.ProcessPublish = true;
+                args.CloseConnection = false;
+                args.ProcessPublish = true;
 
-                // Crea scope, preleva controller, assegna contesto ed attiva route
+                // Crea contesto, crea scope e attiva route
 
-                await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = (scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!) as MqttControllerBase)!;
-                controller.MqttContext = new()
+                var context = new MqttContext()
                 {
-                    PublishEventArgs = context
+                    PublishEventArgs = args
                 };
 
-                var activator = new ActionActivator(topic, route, controller, scope);
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                await using var activator = new RouteActivator(route, topic, context, scope.ServiceProvider);
                 await activator.Activate();
             }
         }
         catch (TargetInvocationException e)
         {
-            context.ProcessPublish = false;
-            context.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error in MQTT publish handler for '{Topic}': ", context.ApplicationMessage.Topic);
+            args.ProcessPublish = false;
+            args.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
+            _logger.LogCritical(e, "Error in MQTT publish handler for '{Topic}': ", args.ApplicationMessage.Topic);
         }
         catch (Exception e)
         {
-            context.ProcessPublish = false;
-            context.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error during MQTT publish handler activation for '{Topic}': ", context.ApplicationMessage.Topic);
+            args.ProcessPublish = false;
+            args.Response.ReasonCode = MqttPubAckReasonCode.UnspecifiedError;
+            _logger.LogCritical(e, "Error during MQTT publish handler activation for '{Topic}': ", args.ApplicationMessage.Topic);
         }
         finally
         {
             // Resetta contesto
 
-            if (mqttContextAccessor is not null)
-                mqttContextAccessor.PublishContext = null;
+            if (_mqttContextAccessor is not null)
+                _mqttContextAccessor.PublishContext = null;
         }
     }
 
-    private async Task InterceptingSubscriptionAsync(InterceptingSubscriptionEventArgs context)
+    private async Task InterceptingSubscriptionAsync(InterceptingSubscriptionEventArgs args)
     {
         try
         {
             // Setta contesto
 
-            if (mqttContextAccessor is not null)
-                mqttContextAccessor.SubscriptionContext = context;
+            if (_mqttContextAccessor is not null)
+                _mqttContextAccessor.SubscriptionContext = args;
 
             // Ignora i messaggi del server
 
-            if (context.ClientId == serverId)
+            if (args.ClientId == serverId)
                 return;
 
             // Controlla che il topic abbia un'azione corrispondente
 
-            string[] topic = context.TopicFilter.Topic.Split('/');
+            var topic = args.TopicFilter.Topic.Split('/');
             var route = _routeTable.MatchSubscribe(topic);
 
             if (route is null)
             {
-                context.ProcessSubscription = false;
-                context.Response.ReasonCode = MqttSubscribeReasonCode.TopicFilterInvalid;
+                args.ProcessSubscription = false;
+                args.Response.ReasonCode = MqttSubscribeReasonCode.TopicFilterInvalid;
             }
             else
             {
                 // Imposta contesto con valori di default
 
-                context.CloseConnection = false;
-                context.ProcessSubscription = true;
+                args.CloseConnection = false;
+                args.ProcessSubscription = true;
 
-                // Crea scope, preleva controller, assegna contesto ed attiva route
+                // Crea contesto, crea scope e attiva route
 
-                await using var scope = _scopeFactory.CreateAsyncScope();
-                var controller = (scope.ServiceProvider.GetRequiredService(route.Method.DeclaringType!) as MqttControllerBase)!;
-                controller.MqttContext = new()
+                var context = new MqttContext()
                 {
-                    SubscriptionEventArgs = context
+                    SubscriptionEventArgs = args
                 };
 
-                var activator = new ActionActivator(topic, route, controller, scope);
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                await using var activator = new RouteActivator(route, topic, context, scope.ServiceProvider);
                 await activator.Activate();
             }
         }
         catch (TargetInvocationException e)
         {
-            context.ProcessSubscription = false;
-            context.Response.ReasonCode = MqttSubscribeReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error in MQTT subscription handler for '{topic}': ", context.TopicFilter.Topic);
+            args.ProcessSubscription = false;
+            args.Response.ReasonCode = MqttSubscribeReasonCode.UnspecifiedError;
+            _logger.LogCritical(e, "Error in MQTT subscription handler for '{topic}': ", args.TopicFilter.Topic);
         }
         catch (Exception e)
         {
-            context.ProcessSubscription = false;
-            context.Response.ReasonCode = MqttSubscribeReasonCode.UnspecifiedError;
-            _logger.LogCritical(e, "Error during MQTT subscription handler activation for '{topic}': ", context.TopicFilter.Topic);
+            args.ProcessSubscription = false;
+            args.Response.ReasonCode = MqttSubscribeReasonCode.UnspecifiedError;
+            _logger.LogCritical(e, "Error during MQTT subscription handler activation for '{topic}': ", args.TopicFilter.Topic);
         }
         finally
         {
             // Resetta contesto
 
-            if (mqttContextAccessor is not null)
-                mqttContextAccessor.SubscriptionContext = null;
+            if (_mqttContextAccessor is not null)
+                _mqttContextAccessor.SubscriptionContext = null;
         }
     }
 
-    private async Task ClientConnectedAsync(ClientConnectedEventArgs eventArgs)
+    private async Task ClientConnectedAsync(ClientConnectedEventArgs args)
     {
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
             var handler = scope.ServiceProvider.GetRequiredService<IMqttConnectionController>();
 
-            await handler.ClientConnectedAsync(eventArgs);
+            await handler.ClientConnectedAsync(args);
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error in MQTT connection handler for '{ClientId}': ", eventArgs.ClientId);
+            _logger.LogCritical(e, "Error in MQTT connection handler for '{ClientId}': ", args.ClientId);
         }
     }
 
-    private async Task ClientDisconnectedAsync(ClientDisconnectedEventArgs eventArgs)
+    private async Task ClientDisconnectedAsync(ClientDisconnectedEventArgs args)
     {
         try
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
             var handler = scope.ServiceProvider.GetRequiredService<IMqttConnectionController>();
 
-            await handler.ClientDisconnectedAsync(eventArgs);
+            await handler.ClientDisconnectedAsync(args);
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error in MQTT disconnection handler for '{ClientId}': ", eventArgs.ClientId);
+            _logger.LogCritical(e, "Error in MQTT disconnection handler for '{ClientId}': ", args.ClientId);
         }
     }
 
@@ -252,9 +250,12 @@ internal sealed class Broker : IBroker
 
     public Task Send(MqttApplicationMessage message)
     {
-        return mqttServer!.InjectApplicationMessage(new(message)
-        {
-            SenderClientId = serverId
-        });
+        if (mqttServer is not null)
+            return mqttServer.InjectApplicationMessage(new(message)
+            {
+                SenderClientId = serverId
+            });
+        else
+            throw new InvalidOperationException($"Please call {nameof(UseMqttServer)}() in startup before using");
     }
 }

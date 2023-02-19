@@ -32,7 +32,8 @@ internal sealed class Route
         // Analizza i singoli segmenti del template (no lazy loading)
 
         var parameters = action.GetParameters();
-        var segments = template
+
+        Template = template
             .Split('/')
             .Select(s => s switch
             {
@@ -59,7 +60,7 @@ internal sealed class Route
                 {
                     // Verifica che il parametro abbia un nome valido
 
-                    if (segment.All(c => char.IsLetterOrDigit(c)))
+                    if (segment.Any(c => !char.IsLetterOrDigit(c)))
                         throw new InvalidOperationException($"Invalid template '{template}'. The parameter name in segment '{s}' is not allowed.");
 
                     // Verifica se il segmento abbia un parametro corrispondente
@@ -76,12 +77,12 @@ internal sealed class Route
 
                 return new TemplateSegment(segment, type, info);
             })
-            .ToList();
+            .ToArray();
 
         // Verifica che un segmento MultiLevelWildcard sia solo alla fine del topic
 
-        for (int i = 0; i < segments.Count; i++)
-            if (segments[i].Type == SegmentType.MultiLevelWildcard && i != segments.Count - 1)
+        for (int i = 0; i < Template.Length; i++)
+            if (Template[i].Type == SegmentType.MultiLevelWildcard && i != Template.Length - 1)
                 throw new InvalidOperationException($"Invalid template '{template}'. The multilevel wildcard can be placed only at the end.");
 
         // Verifica che i parametri corrispondano a quelli dell'azione
@@ -89,16 +90,12 @@ internal sealed class Route
         var actionParams = parameters
             .Select(p => p.Name);
 
-        var templateParams = segments
+        var templateParams = Template
             .Where(s => s.Type == SegmentType.Parametric)
             .Select(p => p.Segment);
 
         if (actionParams.Except(templateParams).Any())
             throw new InvalidOperationException($"Invalid template '{template}'. Missing action parameters.");
-
-        // Inizializza
-
-        Template = segments.ToArray();
     }
 
     public bool Match(string[] topic)

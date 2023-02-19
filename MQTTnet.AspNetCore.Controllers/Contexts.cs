@@ -12,18 +12,19 @@ public sealed class MqttContext
 
 public class ActionContext
 {
-    public MqttControllerBase Controller { get; }
+    public MqttContext MqttContext { get; }
+    public object Controller { get; }
     public IServiceProvider Services { get; }
     public IReadOnlyDictionary<string, string> Parameters { get; }
 
-    public MqttContext MqttContext => Controller.MqttContext;
-
-    public ActionContext(MqttControllerBase controller, IServiceProvider serviceProvider, IReadOnlyDictionary<string, string> parameters)
+    public ActionContext(MqttContext context, object controller, IServiceProvider serviceProvider, IReadOnlyDictionary<string, string> parameters)
     {
+        ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(controller);
         ArgumentNullException.ThrowIfNull(serviceProvider);
         ArgumentNullException.ThrowIfNull(parameters);
 
+        MqttContext = context;
         Controller = controller;
         Services = serviceProvider;
         Parameters = parameters;

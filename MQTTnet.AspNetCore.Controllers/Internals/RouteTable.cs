@@ -36,12 +36,16 @@ internal class RouteTable
     private readonly Route[] _publishRoutes;
     private readonly Route[] _subscribeRoutes;
 
-    public RouteTable(IEnumerable<Type> controllers, IEnumerable<IMqttActionFilter> globalFilters, IEnumerable<IMqttModelBinder> globalBinders)
+    public RouteTable(MqttControllersOptions options)
     {
         // Seleziona dai controller specificati tutti i metodi con un template e ritornane la route
 
         var publishRoutes = new List<Route>();
         var subscribeRoutes = new List<Route>();
+
+        var controllers = options.Assemblies
+            .SelectMany(a => a.GetTypes())
+            .Where(type => type.IsSubclassOf(typeof(MqttControllerBase)) && !type.IsAbstract);
 
         foreach (var controller in controllers)
         {
@@ -57,7 +61,7 @@ internal class RouteTable
 
                 var actionFilters = method.GetCustomAttributes<MqttActionFilterAttribute>(true)
                     .Concat(controllerFilters)
-                    .Concat(globalFilters)
+                    .Concat(options.Filters)
                     .Reverse()
                     .OrderBy(f => f.Order)
                     .ToArray();
@@ -67,7 +71,7 @@ internal class RouteTable
 
                 var modelBinders = method.GetCustomAttributes<MqttModelBinderAttribute>(true)
                     .Concat(controllerBinders)
-                    .Concat(globalBinders)
+                    .Concat(options.Binders)
                     .ToArray();
 
                 // Verifica che il metodo abbia un template

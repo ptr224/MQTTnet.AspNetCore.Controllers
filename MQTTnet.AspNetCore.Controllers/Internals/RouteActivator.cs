@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Routing.Template;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class ActionActivator
+internal class RouteActivator : IAsyncDisposable
 {
     private class DefaultModelBinder : IMqttModelBinder
     {
@@ -25,24 +23,32 @@ internal class ActionActivator
     private readonly Route _route;
     private readonly ActionContext _context;
 
-    public ActionActivator(string[] topic, Route route, MqttControllerBase controller, IServiceScope scope)
+    public RouteActivator(Route route, string[] topic, MqttContext context, IServiceProvider services)
     {
-        _route = route;
+        // Istanzia controller e assegna contesto
 
-        // Costruisci dizionario ed array parametri
+        var obj = ActivatorUtilities.CreateInstance(services, route.Method.DeclaringType!);
 
-        var actionParams = new Dictionary<string, string>();
+        if (obj is MqttControllerBase controller)
+            controller.MqttContext = context;
+        else
+            throw new InvalidOperationException($"Controller must inherit from {nameof(MqttControllerBase)}");
+
+        // Costruisci dizionario parametri
+
+        var parameters = new Dictionary<string, string>();
 
         for (int i = 0; i < route.Template.Length; i++)
         {
             var segment = route.Template[i];
             if (segment.Type == SegmentType.Parametric)
-                actionParams[segment.Segment] = topic[i];
+                parameters[segment.Segment] = topic[i];
         }
 
-        // Assegna contesto
+        // Finalizza
 
-        _context = new(controller, scope.ServiceProvider, actionParams);
+        _route = route;
+        _context = new(context, obj, services, parameters);
     }
 
     private async ValueTask<object?[]?> GetParameters()
@@ -53,7 +59,7 @@ internal class ActionActivator
 
         var parameters = new object?[paramsCount];
 
-        foreach(var segment in _route.Template.Where(s => s.Type == SegmentType.Parametric && s.Parameter is not null))
+        foreach (var segment in _route.Template.Where(s => s.Type == SegmentType.Parametric && s.Parameter is not null))
         {
             var param = segment.Parameter!.Info;
 
@@ -105,5 +111,13 @@ internal class ActionActivator
     public ValueTask Activate()
     {
         return Activate(0);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_context.Controller is IAsyncDisposable asyncDisposable)
+            await asyncDisposable.DisposeAsync();
+        else if (_context.Controller is IDisposable disposable)
+            disposable.Dispose();
     }
 }
