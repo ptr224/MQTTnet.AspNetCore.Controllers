@@ -25,7 +25,7 @@ public class MqttService
         else
             await _broker.Send(new MqttApplicationMessageBuilder()
                 .WithTopic($"{context.ApplicationMessage.Topic}/ans")
-                .WithPayload(context.ApplicationMessage.Payload)
+                .WithPayload(context.ApplicationMessage.PayloadSegment)
                 .WithQualityOfServiceLevel(context.ApplicationMessage.QualityOfServiceLevel)
                 .WithRetainFlag(context.ApplicationMessage.Retain)
                 .Build()
