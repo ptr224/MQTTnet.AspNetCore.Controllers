@@ -20,82 +20,32 @@ internal class RouteActivator : IAsyncDisposable
         }
     }
 
-    private readonly Route _route;
-    private readonly ActionContext _context;
-
-    public RouteActivator(Route route, string[] topic, MqttContext context, IServiceProvider services)
+    private static object?[]? GetParameters(Route route, ActionContext context)
     {
-        // Istanzia controller e assegna contesto
-
-        var obj = ActivatorUtilities.CreateInstance(services, route.Method.DeclaringType!);
-
-        if (obj is MqttControllerBase controller)
-            controller.MqttContext = context;
-        else
-            throw new InvalidOperationException($"Controller must inherit from {nameof(MqttControllerBase)}");
-
-        // Costruisci dizionario parametri
-
-        var parameters = new Dictionary<string, string>();
-
-        for (int i = 0; i < route.Template.Length; i++)
-        {
-            var segment = route.Template[i];
-            if (segment.Type == SegmentType.Parametric)
-                parameters[segment.Segment] = topic[i];
-        }
-
-        // Finalizza
-
-        _route = route;
-        _context = new(context, obj, services, parameters);
-    }
-
-    private async ValueTask<object?[]?> GetParameters()
-    {
-        var paramsCount = _route.Method.GetParameters().Length;
+        var paramsCount = route.Method.GetParameters().Length;
         if (paramsCount == 0)
             return null;
 
         var parameters = new object?[paramsCount];
 
-        foreach (var segment in _route.Template.Where(s => s.Type == SegmentType.Parametric && s.Parameter is not null))
-        {
-            var param = segment.Parameter!.Info;
-
-            // Scorri binder finché non viene tornato un risultato
-            // Prima binder del parametro, poi gli altri, infine default
-
-            var binderContext = new ModelBindingContext(_context.Services, param.ParameterType, _context.Parameters[segment.Segment]);
-            var binders = segment.Parameter.ModelBinders
-                .Concat(_route.ModelBinders)
-                .Append(DefaultModelBinder.Instance);
-
-            foreach (var binder in binders)
-            {
-                await binder.BindModelAsync(binderContext);
-                if (binderContext.Result.IsSet)
-                    break;
-            }
-
-            parameters[param.Position] = binderContext.Result.Model;
-        }
+        foreach (var segment in route.Template.Where(s => s.Type == SegmentType.Parametric && s.Parameter is not null))
+            parameters[segment.Parameter!.Info.Position] = context.Parameters[segment.Segment];
 
         return parameters;
     }
 
-    private async ValueTask Activate(int step)
+    private static async ValueTask Activate(Route route, ActionContext context, int step)
     {
         // Esegui filtro se presente, altrimenti invoca azione
 
-        if (step < _route.ActionFilters.Length)
+        if (step < route.ActionFilters.Length)
         {
-            await _route.ActionFilters[step].OnActionAsync(_context, () => Activate(step + 1));
+            await route.ActionFilters[step].OnActionAsync(context, () => Activate(route, context, step + 1));
         }
         else
         {
-            var parameters = await GetParameters();
-            var returnValue = _route.Method.Invoke(_context.Controller, parameters);
+            var parameters = GetParameters(route, context);
+            var returnValue = route.Method.Invoke(context.Controller, parameters);
 
             if (returnValue is Task task)
             {
@@ -108,16 +58,70 @@ internal class RouteActivator : IAsyncDisposable
         }
     }
 
-    public ValueTask Activate()
+    private readonly Route _route;
+    private readonly string[] _topic;
+    private readonly MqttContext _context;
+    private readonly IServiceProvider _services;
+    private readonly object _controller;
+
+    public RouteActivator(Route route, string[] topic, MqttContext context, IServiceProvider services)
     {
-        return Activate(0);
+        _route = route;
+        _topic = topic;
+        _context = context;
+        _services = services;
+
+        // Istanzia controller e assegna contesto
+
+        _controller = ActivatorUtilities.CreateInstance(services, route.Method.DeclaringType!);
+
+        if (_controller is MqttControllerBase controller)
+            controller.MqttContext = context;
+        else
+            throw new InvalidOperationException($"Controller must inherit from {nameof(MqttControllerBase)}");
+    }
+
+    public async ValueTask ActivateAsync()
+    {
+        // Costruisci dizionario parametri
+
+        var parameters = new Dictionary<string, object?>();
+
+        for (int i = 0; i < _route.Template.Length; i++)
+        {
+            var segment = _route.Template[i];
+            if (segment.Type == SegmentType.Parametric && segment.Parameter is not null)
+            {
+                // Scorri binder finché non viene tornato un risultato
+                // Prima binder del parametro, poi gli altri, infine default
+
+                var binderContext = new ModelBindingContext(_services, segment.Parameter.Info.ParameterType, _topic[i]);
+                var binders = segment.Parameter.ModelBinders
+                    .Concat(_route.ModelBinders)
+                    .Append(DefaultModelBinder.Instance);
+
+                foreach (var binder in binders)
+                {
+                    await binder.BindModelAsync(binderContext);
+                    if (binderContext.Result.IsSet)
+                        break;
+                }
+
+                parameters[segment.Segment] = binderContext.Result.Model;
+            }
+        }
+
+        // Finalizza
+
+        var context = new ActionContext(_context, _controller, _services, parameters);
+        await Activate(_route, context, 0);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_context.Controller is IAsyncDisposable asyncDisposable)
+        if (_controller is IAsyncDisposable asyncDisposable)
             await asyncDisposable.DisposeAsync();
-        else if (_context.Controller is IDisposable disposable)
+        else if (_controller is IDisposable disposable)
             disposable.Dispose();
     }
 }

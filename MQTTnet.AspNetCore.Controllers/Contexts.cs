@@ -15,9 +15,9 @@ public class ActionContext
     public MqttContext MqttContext { get; }
     public object Controller { get; }
     public IServiceProvider Services { get; }
-    public IReadOnlyDictionary<string, string> Parameters { get; }
+    public IReadOnlyDictionary<string, object?> Parameters { get; }
 
-    public ActionContext(MqttContext context, object controller, IServiceProvider serviceProvider, IReadOnlyDictionary<string, string> parameters)
+    public ActionContext(MqttContext context, object controller, IServiceProvider serviceProvider, IReadOnlyDictionary<string, object?> parameters)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(controller);

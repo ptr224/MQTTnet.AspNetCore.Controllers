@@ -68,7 +68,7 @@ internal sealed class MqttBroker : IMqttBroker
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 await using var activator = new RouteActivator(route, topic, context, scope.ServiceProvider);
-                await activator.Activate();
+                await activator.ActivateAsync();
             }
         }
         catch (TargetInvocationException e)
@@ -132,7 +132,7 @@ internal sealed class MqttBroker : IMqttBroker
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 await using var activator = new RouteActivator(route, topic, context, scope.ServiceProvider);
-                await activator.Activate();
+                await activator.ActivateAsync();
             }
         }
         catch (TargetInvocationException e)
