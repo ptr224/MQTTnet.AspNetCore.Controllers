@@ -21,6 +21,7 @@ builder.Services.AddMqttControllers(options =>
     options.AddAssembliesFromCurrentDomain();
     options.WithAuthenticationHandler<MqttAuthenticationHandler>();
     options.WithConnectionHandler<MqttTest.MqttConnectionHandler>();
+    options.WithRetentionHandler<MqttRetentionHandler>();
     options.Filters.Add(new ActionFilter1Attribute());
     options.Binders.Add(new StringModelBinder1Attribute());
 });

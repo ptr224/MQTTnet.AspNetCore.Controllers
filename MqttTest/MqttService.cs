@@ -23,12 +23,17 @@ public class MqttService
         if (context is null)
             _logger.LogWarning("Not a publish event");
         else
-            await _broker.Send(new MqttApplicationMessageBuilder()
+            await _broker.SendMessageAsync(new MqttApplicationMessageBuilder()
                 .WithTopic($"{context.ApplicationMessage.Topic}/ans")
                 .WithPayload(context.ApplicationMessage.PayloadSegment)
                 .WithQualityOfServiceLevel(context.ApplicationMessage.QualityOfServiceLevel)
                 .WithRetainFlag(context.ApplicationMessage.Retain)
                 .Build()
             );
+    }
+
+    public Task ClearRetainedMessages()
+    {
+        return _broker.ClearRetainedMessagesAsync();
     }
 }

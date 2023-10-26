@@ -38,6 +38,7 @@ internal class RouteTable
 
     public Type? AuthenticationHandler { get; }
     public Type? ConnectionHandler { get; }
+    public Type? RetentionHandler { get; }
 
     public RouteTable(MqttControllersOptions options)
     {
@@ -120,6 +121,7 @@ internal class RouteTable
 
         AuthenticationHandler = options.AuthenticationHandler;
         ConnectionHandler = options.ConnectionHandler;
+        RetentionHandler = options.RetentionHandler;
     }
 
     public Route? MatchPublish(string[] topic)

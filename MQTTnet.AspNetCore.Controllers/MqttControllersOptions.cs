@@ -9,6 +9,7 @@ public class MqttControllersOptions
     internal IList<Assembly> Assemblies { get; } = new List<Assembly>();
     internal Type? AuthenticationHandler { get; set; }
     internal Type? ConnectionHandler { get; set; }
+    internal Type? RetentionHandler { get; set; }
 
     public IList<IMqttActionFilter> Filters { get; } = new List<IMqttActionFilter>();
     public IList<IMqttModelBinder> Binders { get; } = new List<IMqttModelBinder>();
@@ -72,5 +73,22 @@ public class MqttControllersOptions
     public MqttControllersOptions WithConnectionHandler<T>() where T : IMqttConnectionHandler
     {
         return WithConnectionHandler(typeof(T));
+    }
+
+    public MqttControllersOptions WithRetentionHandler(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (type.IsAssignableTo(typeof(IMqttRetentionHandler)))
+            RetentionHandler = type;
+        else
+            throw new ArgumentException($"Type must implement {nameof(IMqttRetentionHandler)}", nameof(type));
+
+        return this;
+    }
+
+    public MqttControllersOptions WithRetentionHandler<T>() where T : IMqttRetentionHandler
+    {
+        return WithRetentionHandler(typeof(T));
     }
 }

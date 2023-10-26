@@ -210,6 +210,48 @@ internal sealed class MqttBroker : IMqttBroker
         }
     }
 
+    private async Task LoadingRetainedMessageAsync(LoadingRetainedMessagesEventArgs args)
+    {
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            await using var activator = new HandlerActivator<IMqttRetentionHandler>(scope.ServiceProvider, _routeTable.RetentionHandler!);
+            await activator.Handler.LoadingRetainedMessagesAsync(args);
+        }
+        catch (Exception e)
+        {
+            _logger.LogCritical(e, "Error in MQTT retention handler: ");
+        }
+    }
+
+    private async Task RetainedMessageChangedAsync(RetainedMessageChangedEventArgs args)
+    {
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            await using var activator = new HandlerActivator<IMqttRetentionHandler>(scope.ServiceProvider, _routeTable.RetentionHandler!);
+            await activator.Handler.RetainedMessageChangedAsync(args);
+        }
+        catch (Exception e)
+        {
+            _logger.LogCritical(e, "Error in MQTT retention handler: ");
+        }
+    }
+
+    private async Task RetainedMessagesClearedAsync(EventArgs args)
+    {
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            await using var activator = new HandlerActivator<IMqttRetentionHandler>(scope.ServiceProvider, _routeTable.RetentionHandler!);
+            await activator.Handler.RetainedMessagesClearedAsync(args);
+        }
+        catch (Exception e)
+        {
+            _logger.LogCritical(e, "Error in MQTT retention handler: ");
+        }
+    }
+
     public void UseMqttServer(MqttServer server)
     {
         mqttServer = server;
@@ -233,15 +275,32 @@ internal sealed class MqttBroker : IMqttBroker
             server.ClientConnectedAsync += ClientConnectedAsync;
             server.ClientDisconnectedAsync += ClientDisconnectedAsync;
         }
+
+        // Attiva handler retention se necessario
+
+        if (_routeTable.RetentionHandler is not null)
+        {
+            server.LoadingRetainedMessageAsync += LoadingRetainedMessageAsync;
+            server.RetainedMessageChangedAsync += RetainedMessageChangedAsync;
+            server.RetainedMessagesClearedAsync += RetainedMessagesClearedAsync;
+        }
     }
 
-    public Task Send(MqttApplicationMessage message)
+    public Task SendMessageAsync(MqttApplicationMessage message)
     {
         if (mqttServer is not null)
             return mqttServer.InjectApplicationMessage(new(message)
             {
                 SenderClientId = serverId
             });
+        else
+            throw new InvalidOperationException($"Please call {nameof(UseMqttServer)}() in startup to use this method");
+    }
+
+    public Task ClearRetainedMessagesAsync()
+    {
+        if (mqttServer is not null)
+            return mqttServer.DeleteRetainedMessagesAsync();
         else
             throw new InvalidOperationException($"Please call {nameof(UseMqttServer)}() in startup to use this method");
     }

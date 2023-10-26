@@ -114,9 +114,10 @@ public class MqttController : MqttControllerDefault
     }
 
     [MqttSubscribe("+/no/#")]
-    public void Forbid()
+    public Task Forbid()
     {
         SubscriptionContext.ProcessSubscription = false;
         _logger.LogInformation("Forbid subscription to {topic}", SubscriptionContext.TopicFilter.Topic);
+        return _service.ClearRetainedMessages();
     }
 }
