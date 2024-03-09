@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class HandlerActivator<T> : IAsyncDisposable where T : class
+class HandlerActivator<T> : IAsyncDisposable where T : class
 {
     private readonly object obj;
 

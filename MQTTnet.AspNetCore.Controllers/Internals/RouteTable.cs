@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class RouteTable
+class RouteTable
 {
     private static void ThrowIfInvalidReturnType(MethodInfo method)
     {
@@ -116,8 +112,8 @@ internal class RouteTable
         ThrowIfOverlappingRoutes(publishRoutes);
         ThrowIfOverlappingRoutes(subscribeRoutes);
 
-        _publishRoutes = publishRoutes.ToArray();
-        _subscribeRoutes = subscribeRoutes.ToArray();
+        _publishRoutes = [.. publishRoutes];
+        _subscribeRoutes = [.. subscribeRoutes];
 
         AuthenticationHandler = options.AuthenticationHandler;
         ConnectionHandler = options.ConnectionHandler;

@@ -1,12 +1,10 @@
 ﻿using MQTTnet.Server;
-using System;
-using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
 public interface IMqttBroker
 {
-    Task SendMessageAsync(MqttApplicationMessage message);
+    Task SendMessageAsync(string clientId, MqttApplicationMessage message);
     Task ClearRetainedMessagesAsync();
 }
 

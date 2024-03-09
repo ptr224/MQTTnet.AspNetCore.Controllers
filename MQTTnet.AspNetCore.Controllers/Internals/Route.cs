@@ -1,10 +1,8 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal enum SegmentType
+enum SegmentType
 {
     Normal,
     Parametric,
@@ -12,11 +10,11 @@ internal enum SegmentType
     MultiLevelWildcard
 }
 
-internal record ParametricSegmentInfo(IMqttModelBinder[] ModelBinders, ParameterInfo Info);
+record ParametricSegmentInfo(IMqttModelBinder[] ModelBinders, ParameterInfo Info);
 
-internal record TemplateSegment(string Segment, SegmentType Type, ParametricSegmentInfo? Parameter);
+record TemplateSegment(string Segment, SegmentType Type, ParametricSegmentInfo? Parameter);
 
-internal sealed class Route
+sealed class Route
 {
     public MethodInfo Method { get; }
     public TemplateSegment[] Template { get; }

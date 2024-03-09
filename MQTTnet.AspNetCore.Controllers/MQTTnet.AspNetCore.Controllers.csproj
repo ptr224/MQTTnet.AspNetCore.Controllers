@@ -1,21 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+	<TargetFramework>net8.0</TargetFramework>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<Nullable>enable</Nullable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <AssemblyVersion></AssemblyVersion>
     <FileVersion></FileVersion>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Authors>LambdaCom</Authors>
     <Copyright>Copyright (c) LambdaCom 2022</Copyright>
-    <Version>2.6.0</Version>
-    <Nullable>enable</Nullable>
+    <Version>2.7.0</Version>
     <RepositoryUrl>https://github.com/ptr224/MQTTnet.AspNetCore.Controllers</RepositoryUrl>
     <Description>Use AspNet goodies like Controllers, ContextAccessors, ActionFilters and ModelBinders in MQTTnet</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MQTTnet.AspNetCore" Version="4.3.1.873" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MQTTnet.AspNetCore" Version="4.3.3.952" />
   </ItemGroup>
 
 </Project>

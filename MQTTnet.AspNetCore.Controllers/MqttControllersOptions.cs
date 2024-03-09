@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
 public class MqttControllersOptions
 {
-    internal IList<Assembly> Assemblies { get; } = new List<Assembly>();
+    internal IList<Assembly> Assemblies { get; } = [];
     internal Type? AuthenticationHandler { get; set; }
     internal Type? ConnectionHandler { get; set; }
     internal Type? RetentionHandler { get; set; }
 
-    public IList<IMqttActionFilter> Filters { get; } = new List<IMqttActionFilter>();
-    public IList<IMqttModelBinder> Binders { get; } = new List<IMqttModelBinder>();
+    public IList<IMqttActionFilter> Filters { get; } = [];
+    public IList<IMqttModelBinder> Binders { get; } = [];
 
     public MqttControllersOptions AddAssemblies(params Assembly[] assemblies)
     {
@@ -69,7 +67,7 @@ public class MqttControllersOptions
 
         return this;
     }
-    
+
     public MqttControllersOptions WithConnectionHandler<T>() where T : IMqttConnectionHandler
     {
         return WithConnectionHandler(typeof(T));

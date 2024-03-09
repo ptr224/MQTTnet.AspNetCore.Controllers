@@ -2,15 +2,8 @@
 
 namespace MqttTest;
 
-internal abstract class ActionFilterAttribute : MqttActionFilterAttribute
+abstract class ActionFilterAttribute(int value) : MqttActionFilterAttribute
 {
-    private readonly int _value;
-
-    public ActionFilterAttribute(int value)
-    {
-        _value = value;
-    }
-
     public override async ValueTask OnActionAsync(ActionContext context, MqttActionFilterDelegate next)
     {
         var logger = context.Services.GetRequiredService<ILogger<ActionFilterAttribute>>();
@@ -20,31 +13,24 @@ internal abstract class ActionFilterAttribute : MqttActionFilterAttribute
             logger.LogDebug("Action param serial = {serial}", serial);
         }
 
-        logger.LogDebug("Filter {value} begin", _value);
+        logger.LogDebug("Filter {value} begin", value);
         await next();
-        logger.LogDebug("Filter {value} end", _value);
+        logger.LogDebug("Filter {value} end", value);
     }
 }
 
-internal abstract class StringModelBinderAttribute : MqttModelBinderAttribute
+abstract class StringModelBinderAttribute(int value) : MqttModelBinderAttribute
 {
-    private readonly int _value;
-
-    public StringModelBinderAttribute(int value)
-    {
-        _value = value;
-    }
-
     public override ValueTask BindModelAsync(ModelBindingContext context)
     {
         var logger = context.Services.GetRequiredService<ILogger<StringModelBinderAttribute>>();
 
         if (context.Value.Type == typeof(string))
         {
-            if (_value == 1)
+            if (value == 1)
                 context.Result = ModelBindingResult.Success(context.Value.Value);
 
-            logger.LogDebug("Model binder {value}: Value = {ctx.value} - IsSet = {ctx.isset}", _value, context.Value.Value, context.Result.IsSet);
+            logger.LogDebug("Model binder {value}: Value = {ctx.value} - IsSet = {ctx.isset}", value, context.Value.Value, context.Result.IsSet);
         }
         else
         {
@@ -57,76 +43,28 @@ internal abstract class StringModelBinderAttribute : MqttModelBinderAttribute
 
 // ================================================================
 
-internal class ActionFilter1Attribute : ActionFilterAttribute
-{
-    public ActionFilter1Attribute() : base(1)
-    { }
-}
+class ActionFilter1Attribute() : ActionFilterAttribute(1);
 
-internal class ActionFilter2Attribute : ActionFilterAttribute
-{
-    public ActionFilter2Attribute() : base(2)
-    { }
-}
+class ActionFilter2Attribute() : ActionFilterAttribute(2);
 
-internal class ActionFilter3Attribute : ActionFilterAttribute
-{
-    public ActionFilter3Attribute() : base(3)
-    { }
-}
+class ActionFilter3Attribute() : ActionFilterAttribute(3);
 
-internal class ActionFilter4Attribute : ActionFilterAttribute
-{
-    public ActionFilter4Attribute() : base(4)
-    { }
-}
+class ActionFilter4Attribute() : ActionFilterAttribute(4);
 
-internal class ActionFilter5Attribute : ActionFilterAttribute
-{
-    public ActionFilter5Attribute() : base(5)
-    { }
-}
+class ActionFilter5Attribute() : ActionFilterAttribute(5);
 
 // ================================================================
 
-internal class StringModelBinder1Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder1Attribute() : base(1)
-    { }
-}
+class StringModelBinder1Attribute() : StringModelBinderAttribute(1);
 
-internal class StringModelBinder2Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder2Attribute() : base(2)
-    { }
-}
+class StringModelBinder2Attribute() : StringModelBinderAttribute(2);
 
-internal class StringModelBinder3Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder3Attribute() : base(3)
-    { }
-}
+class StringModelBinder3Attribute() : StringModelBinderAttribute(3);
 
-internal class StringModelBinder4Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder4Attribute() : base(4)
-    { }
-}
+class StringModelBinder4Attribute() : StringModelBinderAttribute(4);
 
-internal class StringModelBinder5Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder5Attribute() : base(5)
-    { }
-}
+class StringModelBinder5Attribute() : StringModelBinderAttribute(5);
 
-internal class StringModelBinder6Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder6Attribute() : base(6)
-    { }
-}
+class StringModelBinder6Attribute() : StringModelBinderAttribute(6);
 
-internal class StringModelBinder7Attribute : StringModelBinderAttribute
-{
-    public StringModelBinder7Attribute() : base(7)
-    { }
-}
+class StringModelBinder7Attribute() : StringModelBinderAttribute(7);

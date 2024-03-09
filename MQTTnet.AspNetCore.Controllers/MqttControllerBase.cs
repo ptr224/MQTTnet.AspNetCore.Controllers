@@ -1,5 +1,4 @@
 ﻿using MQTTnet.Server;
-using System;
 
 namespace MQTTnet.AspNetCore.Controllers;
 

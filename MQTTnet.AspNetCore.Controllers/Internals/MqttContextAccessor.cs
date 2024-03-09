@@ -1,9 +1,8 @@
 ﻿using MQTTnet.Server;
-using System.Threading;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class MqttContextAccessor : IMqttContextAccessor
+class MqttContextAccessor : IMqttContextAccessor
 {
     private static readonly AsyncLocal<MqttContextHolder> mqttContextCurrent = new();
 

@@ -3,27 +3,18 @@ using MQTTnet.AspNetCore.Controllers;
 
 namespace MqttTest;
 
-public class MqttService
+public class MqttService(ILogger<MqttService> logger, IMqttContextAccessor mqttContextAccessor, IMqttBroker broker)
 {
-    private readonly ILogger<MqttService> _logger;
-    private readonly IMqttContextAccessor _mqttContextAccessor;
-    private readonly IMqttBroker _broker;
-
-    public MqttService(ILogger<MqttService> logger, IMqttContextAccessor mqttContextAccessor, IMqttBroker broker)
-    {
-        _logger = logger;
-        _mqttContextAccessor = mqttContextAccessor;
-        _broker = broker;
-    }
+    private readonly string serverId = Guid.NewGuid().ToString("N");
 
     public async ValueTask Answer()
     {
-        var context = _mqttContextAccessor.PublishContext;
+        var context = mqttContextAccessor.PublishContext;
 
         if (context is null)
-            _logger.LogWarning("Not a publish event");
+            logger.LogWarning("Not a publish event");
         else
-            await _broker.SendMessageAsync(new MqttApplicationMessageBuilder()
+            await broker.SendMessageAsync(serverId, new MqttApplicationMessageBuilder()
                 .WithTopic($"{context.ApplicationMessage.Topic}/ans")
                 .WithPayload(context.ApplicationMessage.PayloadSegment)
                 .WithQualityOfServiceLevel(context.ApplicationMessage.QualityOfServiceLevel)
@@ -34,6 +25,6 @@ public class MqttService
 
     public Task ClearRetainedMessages()
     {
-        return _broker.ClearRetainedMessagesAsync();
+        return broker.ClearRetainedMessagesAsync();
     }
 }

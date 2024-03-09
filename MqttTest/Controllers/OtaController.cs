@@ -2,8 +2,7 @@
 
 namespace MqttTest.Controllers;
 
-[Route("api/[controller]")]
-[ApiController]
+[Route("api/[controller]"), ApiController]
 public class OtaController : ControllerBase
 {
     [HttpGet("{id}/{version}")]

@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers;
 
@@ -18,18 +16,10 @@ public class MqttRouteAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-public sealed class MqttPublishAttribute : MqttRouteAttribute
-{
-    public MqttPublishAttribute(string template) : base(template)
-    { }
-}
+public sealed class MqttPublishAttribute(string template) : MqttRouteAttribute(template);
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-public sealed class MqttSubscribeAttribute : MqttRouteAttribute
-{
-    public MqttSubscribeAttribute(string template) : base(template)
-    { }
-}
+public sealed class MqttSubscribeAttribute(string template) : MqttRouteAttribute(template);
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
 public abstract class MqttActionFilterAttribute : Attribute, IMqttActionFilter

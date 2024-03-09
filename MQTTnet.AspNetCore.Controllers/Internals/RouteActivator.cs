@@ -1,12 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class RouteActivator : IAsyncDisposable
+class RouteActivator : IAsyncDisposable
 {
     private class DefaultModelBinder : IMqttModelBinder
     {

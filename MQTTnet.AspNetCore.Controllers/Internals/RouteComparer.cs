@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace MQTTnet.AspNetCore.Controllers.Internals;
 
-internal class RouteComparer : EqualityComparer<Route>
+class RouteComparer : EqualityComparer<Route>
 {
     public override bool Equals(Route? x, Route? y)
     {

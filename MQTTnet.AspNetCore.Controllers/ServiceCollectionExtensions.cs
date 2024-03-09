@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MQTTnet.AspNetCore.Controllers.Internals;
-using System;
 
 namespace MQTTnet.AspNetCore.Controllers;
 

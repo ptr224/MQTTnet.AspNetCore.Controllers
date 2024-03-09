@@ -3,24 +3,17 @@ using MQTTnet.Server;
 
 namespace MqttTest;
 
-public class MqttConnectionHandler : IMqttConnectionHandler
+public class MqttConnectionHandler(ILogger<MqttConnectionHandler> logger) : IMqttConnectionHandler
 {
-    private readonly ILogger<MqttConnectionHandler> _logger;
-
-    public MqttConnectionHandler(ILogger<MqttConnectionHandler> logger)
-    {
-        _logger = logger;
-    }
-
     public ValueTask ClientConnectedAsync(ClientConnectedEventArgs context)
     {
-        _logger.LogInformation("Client {clientId} connected", context.ClientId);
+        logger.LogInformation("Client {clientId} connected", context.ClientId);
         return ValueTask.CompletedTask;
     }
 
     public ValueTask ClientDisconnectedAsync(ClientDisconnectedEventArgs context)
     {
-        _logger.LogInformation("Client {clientId} disconnected", context.ClientId);
+        logger.LogInformation("Client {clientId} disconnected", context.ClientId);
         return ValueTask.CompletedTask;
     }
 }
